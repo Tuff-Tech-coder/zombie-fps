@@ -1,7 +1,7 @@
 extends Node
-## Run-state snapshot (DESIGN_DOC §8.1). v0.2.0 stub: the fields exist so
-## other systems can read them, but nothing writes them until the
-## RoundManager arrives in v0.4.0.
+## Run-state snapshot (DESIGN_DOC §8.1). RoundManager is the sole writer of
+## round_number and phase (since v0.4.0). player_alive remains a stub until
+## something needs to read it.
 
 enum Phase { PREP, ROUND }
 

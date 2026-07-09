@@ -54,6 +54,9 @@ Gameplay numbers never live in scripts. The pattern:
 3. Behavior scripts take the resource via an exported var (`@export var data: WeaponData`).
 
 Adding a gun/perk/recipe means authoring a new `.tres`, not editing systems.
+Round pacing follows the same rule: `RoundConfig` (`autoload/round_config.gd`)
+instances live in `resources/rounds/` — a new map's rounds are a new .tres that
+a map assigns to `RoundManager.config`.
 Tuning values that are per-scene rather than per-data-asset (movement speeds, mouse
 sensitivity) are `@export` vars on the node — still no magic numbers in method bodies.
 

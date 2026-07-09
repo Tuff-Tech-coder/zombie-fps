@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://do65l2c7qpfgl"]
+
+[ext_resource type="PackedScene" uid="uid://cb1hxvkb3gje7" path="res://enemies/models/skeleton_minion/Skeleton_Minion.glb" id="1_70f02"]
+
+[node name="Skeleton_Minion" unique_id=451408397 instance=ExtResource("1_70f02")]

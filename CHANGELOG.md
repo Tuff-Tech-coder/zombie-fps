@@ -5,6 +5,50 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.4.0] — 2026-07-09
+
+### Added
+
+- **Round lifecycle** (`RoundManager`, DESIGN_DOC §3): ROUND phase feeds the
+  field from `EnemyPool` on a spawn interval up to a concurrency cap, topping
+  up as enemies die; when the round's whole budget has spawned and died it
+  emits `round_cleared`, runs a PREP timer, then bumps the round and emits
+  `round_started`. RoundManager is now the sole writer of
+  `GameState.round_number` / `GameState.phase`.
+- **Data-driven tuning**: `RoundConfig` Resource (starting budget, growth,
+  max concurrent, spawn interval, prep duration, rounds per map) authored as
+  `resources/rounds/greybox_rounds.tres` — a new map is a new .tres, not code.
+- **Round spawn markers**: `enemy_spawn_point` group in the greybox (rooms A/B
+  + corridor), outside the NavigationRegion geometry subtree per the nav rule.
+- **Debug WAVE button is live**: start begins a fresh run at round 1; end stops
+  the loop and clears the field. Rounds never auto-start on load — the greybox
+  stays a free-fire range until the button is shot.
+- **Map end seam**: clearing `rounds_per_map` stops the loop, logs the boss
+  hand-off placeholder, and emits the new `EventBus.map_cleared` (boss consumes
+  it in v0.9.0 — not built now).
+- Raw HUD round readout (top center): ROUND n / cleared–prep / map cleared,
+  driven purely by EventBus.
+
+### Changed
+
+- Player death now also resets RoundManager (timers stopped, counters zeroed)
+  and resyncs the WAVE button, so ENTER-restart plus one button press begins a
+  clean run at round 1.
+- Debug wave signals are no longer stubs — RoundManager consumes them.
+- Project version to 0.4.0.
+
+### Verified
+
+- Round 1 spawned exactly its budget and stopped; concurrent alive never
+  exceeded max_concurrent (2-cap test: budget 4 held at 2 alive, deaths topped
+  up instantly to exactly 4 total); the round cleared only after the last
+  enemy died; the prep timer gated round 2; budget grew per config (2→4→6);
+  map end fired after rounds_per_map with the loop halted; WAVE stopped
+  mid-round and cleared the field (round 0, empty pool); player death mid-round
+  zeroed all counters and, after restart, a single WAVE press started a fresh
+  round 1. Shipped greybox .tres (6/+4, cap 24, 0.8s, 10s prep, 5 rounds)
+  loads and reports correctly.
+
 ## [0.3.0] — 2026-07-09
 
 ### Added

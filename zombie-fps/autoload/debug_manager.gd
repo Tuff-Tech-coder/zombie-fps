@@ -13,8 +13,14 @@ var infinite_ammo := false
 var infinite_health := false
 var show_enemy_health := false
 
-var _wave_active := false  # stub-only lit state for the wave button
+var _wave_active := false  # lit state for the wave button
 var _spawn_cursor := 0
+
+
+func _ready() -> void:
+	# RoundManager stops on death; resync the wave toggle so the button's
+	# first post-restart press is a START again.
+	EventBus.player_died.connect(func() -> void: _wave_active = false)
 
 
 func is_enabled() -> bool:
@@ -77,8 +83,7 @@ func toggle_door() -> bool:
 	return opened
 
 
-## Wave stub: alternates start/end requests. No round logic exists until
-## v0.4.0 — RoundManager will connect to these EventBus signals then.
+## Alternates start/end requests; RoundManager consumes them (since v0.4.0).
 func toggle_wave_stub() -> bool:
 	if not is_enabled():
 		return false
@@ -93,12 +98,12 @@ func toggle_wave_stub() -> bool:
 func request_wave_start() -> void:
 	if not is_enabled():
 		return
-	print("[debug] wave START requested (stub — no round logic until v0.4.0)")
+	print("[debug] wave START requested")
 	EventBus.debug_wave_start_requested.emit()
 
 
 func request_wave_end() -> void:
 	if not is_enabled():
 		return
-	print("[debug] wave END requested (stub — no round logic until v0.4.0)")
+	print("[debug] wave END requested")
 	EventBus.debug_wave_end_requested.emit()

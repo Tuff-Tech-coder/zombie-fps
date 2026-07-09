@@ -24,6 +24,19 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+[node name="RoundNote" type="Label" parent="Root"]
+unique_name_in_owner = true
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 18.0
+offset_right = 200.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.85, 0.75, 0.6, 0.85)
+theme_override_font_sizes/font_size = 22
+text = "ROUND 1"
+horizontal_alignment = 1
+
 [node name="Crosshair" type="ColorRect" parent="Root"]
 anchor_left = 0.5
 anchor_top = 0.5
