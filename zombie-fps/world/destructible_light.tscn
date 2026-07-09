@@ -1,0 +1,73 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://world/destructible_light.gd" id="1_dl"]
+
+[sub_resource type="BoxShape3D" id="shape_lamp"]
+size = Vector3(0.4, 0.5, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="mat_fixture"]
+albedo_color = Color(0.1, 0.1, 0.11, 1)
+metallic = 0.3
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="mesh_fixture"]
+material = SubResource("mat_fixture")
+size = Vector3(0.32, 0.1, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="mat_bulb"]
+albedo_color = Color(1, 0.85, 0.6, 1)
+emission_enabled = true
+emission = Color(1, 0.75, 0.5, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="SphereMesh" id="mesh_bulb"]
+material = SubResource("mat_bulb")
+radius = 0.07
+height = 0.14
+
+[sub_resource type="StandardMaterial3D" id="mat_spark"]
+shading_mode = 0
+albedo_color = Color(1, 0.78, 0.45, 1)
+
+[sub_resource type="BoxMesh" id="mesh_spark"]
+material = SubResource("mat_spark")
+size = Vector3(0.02, 0.02, 0.02)
+
+[node name="DestructibleLight" type="StaticBody3D"]
+script = ExtResource("1_dl")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("shape_lamp")
+
+[node name="Fixture" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 2.6
+shadow_enabled = true
+omni_range = 9.0
+
+[node name="Sparks" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+emitting = false
+amount = 14
+one_shot = true
+lifetime = 0.4
+explosiveness = 1.0
+mesh = SubResource("mesh_spark")
+direction = Vector3(0, -1, 0)
+spread = 50.0
+gravity = Vector3(0, -8, 0)
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+
+[node name="BreakAudio" type="AudioStreamPlayer3D" parent="."]
+volume_db = -6.0

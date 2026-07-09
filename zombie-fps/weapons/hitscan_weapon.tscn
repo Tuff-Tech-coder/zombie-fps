@@ -1,0 +1,89 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://weapons/hitscan_weapon.gd" id="1_hw"]
+[ext_resource type="Resource" path="res://resources/weapons/sterling_9mm.tres" id="2_data"]
+
+[sub_resource type="StandardMaterial3D" id="mat_gun"]
+albedo_color = Color(0.13, 0.13, 0.15, 1)
+metallic = 0.4
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="mesh_body"]
+material = SubResource("mat_gun")
+size = Vector3(0.07, 0.09, 0.32)
+
+[sub_resource type="BoxMesh" id="mesh_barrel"]
+material = SubResource("mat_gun")
+size = Vector3(0.03, 0.03, 0.16)
+
+[sub_resource type="BoxMesh" id="mesh_grip"]
+material = SubResource("mat_gun")
+size = Vector3(0.05, 0.09, 0.06)
+
+[sub_resource type="BoxMesh" id="mesh_mag"]
+material = SubResource("mat_gun")
+size = Vector3(0.045, 0.12, 0.07)
+
+[sub_resource type="StandardMaterial3D" id="mat_flash"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_color = Color(1, 0.8, 0.5, 0.9)
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="mesh_flash"]
+material = SubResource("mat_flash")
+size = Vector2(0.25, 0.25)
+
+[node name="HitscanWeapon" type="Node3D"]
+script = ExtResource("1_hw")
+data = ExtResource("2_data")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1)
+cast_shadow = 0
+mesh = SubResource("mesh_body")
+
+[node name="Barrel" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, -0.31)
+cast_shadow = 0
+mesh = SubResource("mesh_barrel")
+
+[node name="Grip" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.085, -0.02)
+cast_shadow = 0
+mesh = SubResource("mesh_grip")
+
+[node name="Mag" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.16)
+cast_shadow = 0
+mesh = SubResource("mesh_mag")
+
+[node name="MuzzleFlash" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, -0.42)
+visible = false
+
+[node name="FlashMesh" type="MeshInstance3D" parent="Model/MuzzleFlash"]
+cast_shadow = 0
+mesh = SubResource("mesh_flash")
+
+[node name="FlashLight" type="OmniLight3D" parent="Model/MuzzleFlash"]
+light_color = Color(1, 0.75, 0.45, 1)
+light_energy = 2.5
+omni_range = 5.0
+
+[node name="FireAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -4.0
+max_polyphony = 4
+
+[node name="ReloadAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
+
+[node name="DryAudio" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
+
+[node name="FlashTimer" type="Timer" parent="."]
+wait_time = 0.05
+one_shot = true
