@@ -145,7 +145,7 @@ Systems communicate through `EventBus` signals (e.g. `enemy_died`, `round_starte
 
 All cross-engine, imports into Godot. **Prefer CC0; verify the license on each asset before shipping.**
 
-- **Enemies + animations:** Mixamo (free, royalty-free; ships embedded in a compiled game).
+- **Enemies + animations:** Mixamo (free, royalty-free; ships embedded in a compiled game). *In practice since v0.3.0:* KayKit character packs (CC0, GitHub-hosted, animations bundled on the rig) — chosen because Mixamo requires an interactive Adobe login; swapping to a Mixamo rig later is a scene-only change.
 - **Grimy textures/materials:** ambientCG, Poly Haven, CGBookcase (all CC0 PBR).
 - **Props / weapons / modular environment:** Kenney, Quaternius (CC0); itch.io packs (per-asset license).
 - **Audio:** Sonniss GDC bundle (royalty-free), Freesound (filter for CC0), Kenney audio (CC0), Pixabay.

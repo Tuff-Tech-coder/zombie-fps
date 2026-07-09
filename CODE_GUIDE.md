@@ -12,8 +12,9 @@ The Godot project lives in `zombie-fps/`. Top-level folders:
 | `autoload/` | Singleton scripts registered in Project Settings (EventBus, GameState, …) |
 | `player/` | FPS controller scene + script |
 | `weapons/` | `Weapon` base, per-type subclasses, weapon scenes, shared weapon FX |
-| `world/` | Levels (greybox for now) and world objects (targets, destructible lights) |
-| `ui/` | HUD, post-process overlays (film grain), future menus |
+| `enemies/` | `Enemy` base, per-type subclasses, `EnemyPool`/`EnemyNavManager`, imported models under `enemies/models/<name>/` (with their LICENSE) |
+| `world/` | Levels (greybox for now) and world objects (targets, lights, debug fixtures) |
+| `ui/` | HUD, overlays (film grain, game over), future menus |
 | `resources/` | **Data only** — authored `.tres` files, grouped by domain (`resources/weapons/`, later `resources/perks/`, `resources/formulas/`) |
 
 Docs (`DESIGN_DOC.md`, `CODE_GUIDE.md`, `CHANGELOG.md`) live at the repo root, one
@@ -58,15 +59,80 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
 
 ## Gameplay contracts
 
-- **Hittable objects** implement `take_hit(damage: float, hit_pos: Vector3, normal: Vector3)`.
+- **Hittable objects** implement
+  `take_hit(damage: float, hit_pos: Vector3, normal: Vector3, shape_index: int = 0)`.
   Hitscan weapons duck-type on `has_method("take_hit")` — no registration needed.
-  (`ShootingTarget` and `DestructibleLight` are the reference implementations.)
+  The `shape_index` (from the ray result) lets multi-shape bodies resolve weak
+  points; single-shape implementers just ignore it. (`ShootingTarget`,
+  `DestructibleLight`, `Enemy`, and `DebugButton` are the implementations.)
 - **Pooling (DESIGN_DOC §8.4):** repeated effects/entities are pooled up front and
   recycled — no `instantiate()`/`queue_free()` in hot loops. See the impact-effect
-  pool in `weapons/hitscan_weapon.gd`.
+  pool in `weapons/hitscan_weapon.gd` and `enemies/enemy_pool.gd`.
 - Weapon subclasses override `_do_fire()`; the `Weapon` base owns ammo, fire-rate
   gating, and reload timing. Optional audio child nodes (`ReloadAudio`, `DryAudio`)
   are picked up by name if present.
+- **Damage to the player** goes through `Player.take_damage(amount)` — never write
+  `health` directly. It emits `player_health_changed` and handles death.
+
+## Enemies (v0.3.0)
+
+- **`Enemy` base** (`enemies/enemy.gd`, CharacterBody3D): every zombie variant and
+  map boss subclasses it. Load-bearing methods — don't fork their semantics:
+  - `take_damage(amount, is_weakpoint)` → applies `weakpoint_multiplier`, triggers `die()`.
+  - `take_hit(...)` → maps the ray's `shape_index` to the `HeadShape` node for
+    weak-point detection (body capsule is shape 0, head sphere is shape 1).
+  - `die()` → death anim, `EventBus.enemy_died`, then **returns itself to the pool**
+    after `death_duration`. Never `queue_free`.
+  - `reset()` / `deactivate()` → the pooling contract: full restore to combat-ready /
+    dormant (invisible, collision off, `PROCESS_MODE_DISABLED`).
+- **Scene contract** (see `zombie_walker.tscn`): `Model` (imported scene containing
+  an AnimationPlayer — resolved at runtime, never hardcode its internal path),
+  `AnimationTree` (state machine with states named `locomotion` / `attack` /
+  `death`; code drives it via `playback.start()`, no authored transitions),
+  `NavigationAgent3D`, `HeadShape`, `HealthLabel`. Looping anims are listed in the
+  exported `loop_animations` (imported GLB animations don't loop by default).
+- **AI state machine**: `SPAWNING → CHASING → ATTACKING → DEAD` enum in the base.
+  Attack damage lands at `attack_hit_time` into the swing, only if the player is
+  still in reach.
+- **Staggered navigation**: `EnemyNavManager` (autoload) is the *only* writer of
+  `agent.target_position`, repathing `UPDATES_PER_TICK` enemies per physics tick
+  round-robin. Enemies read `get_next_path_position()` but never set targets.
+- **`EnemyPool`** (autoload): `acquire(pos)` / `release(enemy)`, hard cap
+  `MAX_ENEMIES = 50` (DESIGN_DOC §3). Pooled nodes live under the autoload and
+  survive scene reloads — restart paths must call `release_all()`.
+- **Animation LOD hook**: `set_animation_enabled(on)` exists for the v0.8.0 LOD
+  manager; don't add per-enemy animation costs that bypass it.
+- Collision layers: 1 = world, 2 = player, 3 = enemy. Weapon rays exclude the
+  wielder and hit everything else.
+
+## Debug system (v0.3.0)
+
+- **Everything debug lives in or routes through `DebugManager`** (autoload), gated
+  by `DebugManager.is_enabled()` (`DEBUG_ENABLED` const AND `OS.is_debug_build()`).
+  Flip the const to false and the panel removes itself, all flags read false, and
+  every debug function no-ops.
+- Gameplay systems get **at most one guarded check** against DebugManager, at the
+  point of effect. Current checks (the complete list — keep it short):
+  `Weapon.try_fire` (`infinite_ammo`), `Player.take_damage` (`infinite_health`),
+  `Enemy._update_health_label` (`show_enemy_health`).
+- The in-world **debug panel** (`world/debug_panel.tscn`, room B east wall) is a row
+  of shootable `DebugButton`s — they implement `take_hit` like any target and only
+  call DebugManager. Toggle buttons read the returned state and light green (on) /
+  dim red (off). New debug behavior = a DebugManager function + a button wired by
+  its `action` export, not code scattered in gameplay scripts.
+- The **wave button is a stub**: it alternates `EventBus.debug_wave_start_requested`
+  / `debug_wave_end_requested` and logs. RoundManager consumes these in v0.4.0.
+- The debug room (big empty greybox behind the sliding `DebugDoor`) exists for
+  spawn/path stress tests; its door is walkable in the navmesh on purpose (closed
+  = physical block only).
+
+## Navigation
+
+- The greybox navmesh is **baked at runtime** (`world/nav_region.gd`) because the
+  CSG layout still changes every milestone. Only children of the
+  `NavigationRegion3D` (the `Geometry` tree) are parsed — keep doors, targets,
+  panels, and other dynamic objects *outside* that subtree so they don't carve
+  the mesh.
 
 ## Scenes
 

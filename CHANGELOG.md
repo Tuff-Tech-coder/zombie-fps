@@ -5,6 +5,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.3.0] — 2026-07-09
+
+### Added
+
+- **First enemy**: `Enemy` base class (health, weak-point/headshot bonus damage
+  via per-shape hit resolution, `die()`, pooling `reset()`/`deactivate()`
+  contract, animation-LOD hook) with `ZombieWalker` as the first subclass.
+- **Enemy model**: KayKit *Character Pack: Skeletons* minion (CC0) with bundled
+  walk/attack/death animations, driven by an `AnimationTree` state machine
+  (locomotion → attack → death). Substituted for Mixamo (which needs an
+  interactive Adobe login) with identical wiring — swapping models later is a
+  scene-only change. License ships alongside the model.
+- **Enemy AI**: Spawning → Chasing → Attacking → Dead state machine; melee damage
+  lands on the swing's contact frame; enemies face their movement/target.
+- **Navigation**: `NavigationRegion3D` with runtime bake over the whole greybox;
+  `EnemyNavManager` autoload staggers path updates (fixed budget per physics
+  tick, round-robin) so enemies never repath per-frame.
+- **`EnemyPool`** autoload: enemies are instantiated once and recycled — no
+  instantiate/free in the combat loop; hard cap of 50; survives scene reloads.
+- **Live player health**: `Player.take_damage`, HUD updates on every hit, death
+  at zero HP with a freeze + "YOU DIED" overlay and ENTER-to-restart.
+- **Debug system** (strippable via one flag + auto-disabled in release builds):
+  `DebugManager` autoload with `infinite_ammo` / `infinite_health` /
+  `show_enemy_health` flags and spawn/door/wave functions; an in-world panel of
+  seven shootable buttons with lit on/off lamps (spawn 1, spawn 10, the three
+  toggles, sliding debug door, wave-request stub that only emits
+  `debug_wave_start/end_requested`); per-enemy floating health readouts; a big
+  empty debug room behind the door for horde stress tests.
+- **EventBus**: `player_died`, `debug_wave_start_requested`,
+  `debug_wave_end_requested`; `enemy_died` is now live.
+- Named physics layers: world (1), player (2), enemy (3).
+
+### Changed
+
+- `take_hit` contract gains a `shape_index` parameter so multi-shape bodies
+  (enemy head vs body) can resolve weak points; all implementers updated.
+- Player moved to physics layer 2 (mask: world + enemies).
+- Project version to 0.3.0.
+
+### Verified
+
+- Zombie paths from the debug room through three doorways to the player around
+  obstacles; 20-enemy horde stress test; body shot 60→48 vs headshot 48→24
+  (exact 2× weak-point math); 11 kills by live gunfire returned to the pool with
+  zero leaks (total stayed 20 across kills, deaths, and a scene restart);
+  disabling the debug flag removes the panel and inerts every debug effect.
+
 ## [0.2.0] — 2026-07-08
 
 ### Added

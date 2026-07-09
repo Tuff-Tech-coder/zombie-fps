@@ -15,7 +15,7 @@ func _ready() -> void:
 	audio.stream = PlaceholderSfx.impact()
 
 
-func take_hit(_damage: float, _hit_pos: Vector3, _normal: Vector3) -> void:
+func take_hit(_damage: float, _hit_pos: Vector3, _normal: Vector3, _shape_index: int = 0) -> void:
 	if _broken:
 		return
 	_broken = true

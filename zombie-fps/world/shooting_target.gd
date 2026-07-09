@@ -21,7 +21,7 @@ func _ready() -> void:
 	body.set_surface_override_material(0, _mat)
 
 
-func take_hit(damage: float, _hit_pos: Vector3, _normal: Vector3) -> void:
+func take_hit(damage: float, _hit_pos: Vector3, _normal: Vector3, _shape_index: int = 0) -> void:
 	if _downed:
 		return
 	_flash = 1.0

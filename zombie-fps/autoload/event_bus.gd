@@ -9,14 +9,21 @@ extends Node
 
 # -- player / weapons / HUD (live since v0.2.0) --
 signal player_health_changed(current: float, max_health: float)
+signal player_died()
 signal weapon_equipped(data: WeaponData)
 signal weapon_fired(weapon: Weapon)
 signal ammo_changed(mag: int, reserve: int)
 signal weapon_reload_started(duration: float)
 signal weapon_reload_finished()
 
+# -- enemies (live since v0.3.0) --
+signal enemy_died(enemy)
+
+# -- debug stubs (emitted by DebugManager only; RoundManager listens in v0.4.0) --
+signal debug_wave_start_requested()
+signal debug_wave_end_requested()
+
 # -- declared ahead of their milestones so downstream briefs slot in --
-signal enemy_died(enemy)                       # v0.3.0
 signal round_started(round_number: int)        # v0.4.0
 signal round_cleared(round_number: int)        # v0.4.0
 signal resource_picked_up(resource)            # v0.5.0

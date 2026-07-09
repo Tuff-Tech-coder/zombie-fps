@@ -21,11 +21,12 @@ extends CharacterBody3D
 @export var crouch_lerp_speed := 10.0
 
 @export_group("Stats")
-@export var max_health := 100.0  ## fixed stub until damage arrives in v0.3.0
+@export var max_health := 100.0
 
 var health := 100.0
 var _pitch := 0.0
 var _crouching := false
+var _dead := false
 
 @onready var head: Node3D = $Head
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
@@ -119,6 +120,23 @@ func _set_pitch(value: float) -> void:
 	_pitch = clampf(value,
 			-deg_to_rad(pitch_limit_degrees), deg_to_rad(pitch_limit_degrees))
 	head.rotation.x = _pitch
+
+
+func take_damage(amount: float) -> void:
+	if _dead:
+		return
+	if DebugManager.infinite_health:  # the one debug check (CODE_GUIDE rules)
+		return
+	health = maxf(health - amount, 0.0)
+	EventBus.player_health_changed.emit(health, max_health)
+	if health <= 0.0:
+		_die()
+
+
+func _die() -> void:
+	_dead = true
+	# The game-over overlay listens for this and freezes the tree.
+	EventBus.player_died.emit()
 
 
 func _on_weapon_fired() -> void:

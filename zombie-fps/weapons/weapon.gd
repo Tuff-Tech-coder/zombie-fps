@@ -44,7 +44,8 @@ func try_fire() -> void:
 			_dry_audio.play()
 		start_reload()  # empty trigger pull auto-reloads
 		return
-	mag -= 1
+	if not DebugManager.infinite_ammo:  # the one debug check (CODE_GUIDE rules)
+		mag -= 1
 	_cooldown = 1.0 / data.fire_rate
 	_do_fire()
 	fired.emit()

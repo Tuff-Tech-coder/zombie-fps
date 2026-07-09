@@ -1,10 +1,14 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="1_pl"]
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="2_hud"]
 [ext_resource type="PackedScene" path="res://ui/film_grain.tscn" id="3_fg"]
 [ext_resource type="PackedScene" path="res://world/shooting_target.tscn" id="4_tg"]
 [ext_resource type="PackedScene" path="res://world/destructible_light.tscn" id="5_dl"]
+[ext_resource type="Script" path="res://world/nav_region.gd" id="6_nav"]
+[ext_resource type="PackedScene" path="res://world/debug_door.tscn" id="7_dd"]
+[ext_resource type="PackedScene" path="res://world/debug_panel.tscn" id="8_dp"]
+[ext_resource type="PackedScene" path="res://ui/game_over.tscn" id="9_go"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -36,6 +40,11 @@ adjustment_enabled = true
 adjustment_brightness = 0.97
 adjustment_contrast = 1.12
 adjustment_saturation = 0.65
+
+[sub_resource type="NavigationMesh" id="navmesh"]
+geometry_parsed_geometry_type = 1
+agent_height = 2.0
+agent_radius = 0.45
 
 [sub_resource type="StandardMaterial3D" id="mat_wall"]
 albedo_color = Color(0.27, 0.28, 0.3, 1)
@@ -74,147 +83,205 @@ height = 0.14
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")
 
-[node name="Geometry" type="Node3D" parent="."]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("navmesh")
+script = ExtResource("6_nav")
 
-[node name="FloorA" type="CSGBox3D" parent="Geometry"]
+[node name="Geometry" type="Node3D" parent="NavigationRegion3D"]
+
+[node name="FloorA" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 use_collision = true
 size = Vector3(17, 0.5, 11)
 material = SubResource("mat_floor")
 
-[node name="FloorCorridor" type="CSGBox3D" parent="Geometry"]
+[node name="FloorCorridor" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, -0.25, 0)
 use_collision = true
 size = Vector3(8, 0.5, 4)
 material = SubResource("mat_floor")
 
-[node name="FloorB" type="CSGBox3D" parent="Geometry"]
+[node name="FloorB" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, -0.25, 0)
 use_collision = true
 size = Vector3(11, 0.5, 11)
 material = SubResource("mat_floor")
 
-[node name="CeilingA" type="CSGBox3D" parent="Geometry"]
+[node name="FloorDebug" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, -0.25, -15.5)
+use_collision = true
+size = Vector3(20, 0.5, 20)
+material = SubResource("mat_floor")
+
+[node name="CeilingA" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 0)
 use_collision = true
 size = Vector3(17, 0.5, 11)
 material = SubResource("mat_wall")
 
-[node name="CeilingCorridor" type="CSGBox3D" parent="Geometry"]
+[node name="CeilingCorridor" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 4.25, 0)
 use_collision = true
 size = Vector3(8, 0.5, 4)
 material = SubResource("mat_wall")
 
-[node name="CeilingB" type="CSGBox3D" parent="Geometry"]
+[node name="CeilingB" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 4.25, 0)
 use_collision = true
 size = Vector3(11, 0.5, 11)
 material = SubResource("mat_wall")
 
-[node name="WallANorth" type="CSGBox3D" parent="Geometry"]
+[node name="CeilingDebug" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 4.25, -15.5)
+use_collision = true
+size = Vector3(20, 0.5, 20)
+material = SubResource("mat_wall")
+
+[node name="WallANorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5.25)
 use_collision = true
 size = Vector3(17, 4, 0.5)
 material = SubResource("mat_wall")
 
-[node name="WallASouth" type="CSGBox3D" parent="Geometry"]
+[node name="WallASouth" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5.25)
 use_collision = true
 size = Vector3(17, 4, 0.5)
 material = SubResource("mat_wall")
 
-[node name="WallAWest" type="CSGBox3D" parent="Geometry"]
+[node name="WallAWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.25, 2, 0)
 use_collision = true
 size = Vector3(0.5, 4, 10)
 material = SubResource("mat_wall")
 
-[node name="WallAEastN" type="CSGBox3D" parent="Geometry"]
+[node name="WallAEastN" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 2, -3.25)
 use_collision = true
 size = Vector3(0.5, 4, 3.5)
 material = SubResource("mat_wall")
 
-[node name="WallAEastS" type="CSGBox3D" parent="Geometry"]
+[node name="WallAEastS" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 2, 3.25)
 use_collision = true
 size = Vector3(0.5, 4, 3.5)
 material = SubResource("mat_wall")
 
-[node name="WallCorridorN" type="CSGBox3D" parent="Geometry"]
+[node name="WallCorridorN" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, -1.75)
 use_collision = true
 size = Vector3(8, 4, 0.5)
 material = SubResource("mat_wall")
 
-[node name="WallCorridorS" type="CSGBox3D" parent="Geometry"]
+[node name="WallCorridorS" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 1.75)
 use_collision = true
 size = Vector3(8, 4, 0.5)
 material = SubResource("mat_wall")
 
-[node name="WallBNorth" type="CSGBox3D" parent="Geometry"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 2, -5.25)
+[node name="WallBNorthLeft" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5, 2, -5.25)
 use_collision = true
-size = Vector3(11, 4, 0.5)
+size = Vector3(4, 4, 0.5)
 material = SubResource("mat_wall")
 
-[node name="WallBSouth" type="CSGBox3D" parent="Geometry"]
+[node name="WallBNorthRight" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 2, -5.25)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="DoorHeader" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.5, -5.25)
+use_collision = true
+size = Vector3(3, 1, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallBSouth" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 2, 5.25)
 use_collision = true
 size = Vector3(11, 4, 0.5)
 material = SubResource("mat_wall")
 
-[node name="WallBEast" type="CSGBox3D" parent="Geometry"]
+[node name="WallBEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.25, 2, 0)
 use_collision = true
 size = Vector3(0.5, 4, 10)
 material = SubResource("mat_wall")
 
-[node name="WallBWestN" type="CSGBox3D" parent="Geometry"]
+[node name="WallBWestN" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.75, 2, -3.25)
 use_collision = true
 size = Vector3(0.5, 4, 3.5)
 material = SubResource("mat_wall")
 
-[node name="WallBWestS" type="CSGBox3D" parent="Geometry"]
+[node name="WallBWestS" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.75, 2, 3.25)
 use_collision = true
 size = Vector3(0.5, 4, 3.5)
 material = SubResource("mat_wall")
 
-[node name="Crate1" type="CSGBox3D" parent="Geometry"]
+[node name="WallDebugWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.75, 2, -15.5)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("mat_wall")
+
+[node name="WallDebugEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.25, 2, -15.5)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("mat_wall")
+
+[node name="WallDebugNorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 2, -25.75)
+use_collision = true
+size = Vector3(21, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallDebugSouthWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, -5.25)
+use_collision = true
+size = Vector3(5, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallDebugSouthEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 2, -5.25)
+use_collision = true
+size = Vector3(5, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="Crate1" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 2.5)
 use_collision = true
 size = Vector3(1, 1, 1)
 material = SubResource("mat_crate")
 
-[node name="Crate2" type="CSGBox3D" parent="Geometry"]
+[node name="Crate2" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(0.939693, 0, -0.34202, 0, 1, 0, 0.34202, 0, 0.939693, -2.5, 1.5, 2.5)
 use_collision = true
 size = Vector3(1, 1, 1)
 material = SubResource("mat_crate")
 
-[node name="Crate3" type="CSGBox3D" parent="Geometry"]
+[node name="Crate3" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, -2.8)
 use_collision = true
 size = Vector3(1, 1, 1)
 material = SubResource("mat_crate")
 
-[node name="CoverWall" type="CSGBox3D" parent="Geometry"]
+[node name="CoverWall" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.55, 1.8)
 use_collision = true
 size = Vector3(2.5, 1.1, 0.6)
 material = SubResource("mat_wall")
 
-[node name="PillarB1" type="CSGBox3D" parent="Geometry"]
+[node name="PillarB1" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5, 2, -2.5)
 use_collision = true
 size = Vector3(0.8, 4, 0.8)
 material = SubResource("mat_wall")
 
-[node name="PillarB2" type="CSGBox3D" parent="Geometry"]
+[node name="PillarB2" type="CSGBox3D" parent="NavigationRegion3D/Geometry"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.5, 2, 2.5)
 use_collision = true
 size = Vector3(0.8, 4, 0.8)
@@ -258,6 +325,42 @@ light_energy = 3.0
 shadow_enabled = true
 omni_range = 10.0
 
+[node name="LampDebugA" type="Node3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 3.9, -11)
+
+[node name="Fixture" type="MeshInstance3D" parent="Lights/LampDebugA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="Lights/LampDebugA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="Lights/LampDebugA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="LampDebugB" type="Node3D" parent="Lights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 3.9, -20)
+
+[node name="Fixture" type="MeshInstance3D" parent="Lights/LampDebugB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="Lights/LampDebugB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="Lights/LampDebugB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
 [node name="CorridorLight" parent="Lights" instance=ExtResource("5_dl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 3.8, 0)
 
@@ -275,9 +378,34 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 24.8, 0, 0)
 [node name="TargetB3" parent="Targets" instance=ExtResource("4_tg")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 24.8, 0, 3)
 
+[node name="DebugDoor" parent="." instance=ExtResource("7_dd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 1.5, -5.25)
+
+[node name="DebugPanel" parent="." instance=ExtResource("8_dp")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 25.9, 1.5, 0)
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="SpawnPoint1" type="Marker3D" parent="SpawnPoints" groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0.1, -1)
+
+[node name="SpawnPoint2" type="Marker3D" parent="SpawnPoints" groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.1, -12)
+
+[node name="SpawnPoint3" type="Marker3D" parent="SpawnPoints" groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0.1, -12)
+
+[node name="SpawnPoint4" type="Marker3D" parent="SpawnPoints" groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.1, -21)
+
+[node name="SpawnPoint5" type="Marker3D" parent="SpawnPoints" groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0.1, -21)
+
 [node name="Player" parent="." instance=ExtResource("1_pl")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -6, 0.1, 0)
 
 [node name="FilmGrain" parent="." instance=ExtResource("3_fg")]
 
 [node name="HUD" parent="." instance=ExtResource("2_hud")]
+
+[node name="GameOver" parent="." instance=ExtResource("9_go")]

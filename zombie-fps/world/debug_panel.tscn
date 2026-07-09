@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://world/debug_button.tscn" id="1_btn"]
+[ext_resource type="Script" path="res://world/debug_panel.gd" id="2_ps"]
+
+[sub_resource type="StandardMaterial3D" id="board_mat"]
+albedo_color = Color(0.1, 0.11, 0.12, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="board_mesh"]
+material = SubResource("board_mat")
+size = Vector3(4.9, 1.5, 0.08)
+
+[node name="DebugPanel" type="Node3D"]
+script = ExtResource("2_ps")
+
+[node name="Backboard" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.06)
+mesh = SubResource("board_mesh")
+
+[node name="Title" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 0.02)
+text = "— DEBUG —"
+font_size = 56
+outline_size = 12
+modulate = Color(1, 0.7, 0.3, 1)
+
+[node name="Spawn1" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.86, 0, 0)
+action = "spawn_1"
+
+[node name="Spawn10" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.24, 0, 0)
+action = "spawn_10"
+
+[node name="InfAmmo" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0, 0)
+action = "infinite_ammo"
+
+[node name="InfHealth" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+action = "infinite_health"
+
+[node name="EnemyHealthBars" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62, 0, 0)
+action = "enemy_health_bars"
+
+[node name="Door" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.24, 0, 0)
+action = "door"
+
+[node name="Wave" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.86, 0, 0)
+action = "wave"

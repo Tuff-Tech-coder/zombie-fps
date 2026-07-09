@@ -66,7 +66,8 @@ func _fire_ray() -> void:
 		return
 	var collider: Object = hit.collider
 	if collider and collider.has_method("take_hit"):
-		collider.take_hit(data.damage, hit.position, hit.normal)
+		# shape index lets multi-shape bodies (enemies) resolve weak points
+		collider.take_hit(data.damage, hit.position, hit.normal, hit.shape)
 	_spawn_impact(hit.position, hit.normal)
 
 
