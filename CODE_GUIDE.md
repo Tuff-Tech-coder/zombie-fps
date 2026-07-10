@@ -111,11 +111,39 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
   built thing takes over the ray. Scene reload = spot back to EMPTY; buildables
   never persist across a run.
 - **`Buildable`** base: invulnerable by design (no `take_hit`), solid on
-  world + interactable layers. `AutoTurret` is the reference subclass — driven
-  by a `WeaponData` .tres, local magazine loaded via interact from the shared
-  ammo pool, targets the nearest live enemy in its Area3D, fires with the same
-  `take_hit` contract as the player's gun (weak points work for free), never
-  wastes rounds on walls or corpses.
+  world + interactable layers. Note: buildables are NOT in the navmesh (built
+  after the runtime bake), so enemies path through their space and get
+  physically blocked — emergent barricading, kept on purpose.
+- **`TurretGun`** (v0.5.1) sits between `Buildable` and the two turrets: the
+  WeaponData hitscan, local magazine (`loaded_ammo`/`capacity`), cooldown, and
+  `reload_from_inventory()` resupply live here. `try_fire(aim_point,
+  require_enemy_hit)` is the one trigger: with the flag, a round is spent only
+  if the first hit is an enemy (`AutoTurret` — never wastes ammo on walls);
+  without it, pulling the trigger always costs the round (`ManualTurret`).
+  Scene contract via unique names: `%Muzzle`, `%Flash`, `%FlashTimer`,
+  `%FireAudio`, `%StatusLabel` (remember: `unique_name_in_owner = true` is a
+  property line in .tscn, not a node-header attribute).
+- **Mount contract** (v0.5.1): `Player.enter_mount(turret)` /
+  `Player.exit_mount()` own the player side (park at the turret's `Mount`
+  marker, suppress ALL player input paths — look, movement, fire/reload,
+  interact ray — but `take_damage` stays live: rooted + exposed is the
+  trade). The turret side is `on_mounted(player)` / `on_dismounted()` —
+  camera switch, HUD announce (`weapon_equipped` + `ammo_changed`), and
+  mounted input (mouse aim within clamps, LMB fire, R reload, E dismount).
+  A ~0.25 s input grace after mounting stops the same E press from
+  mounting and dismounting in one go (a press edge fires in both the
+  player's idle frame and the turret's physics frame). `Player._die()`
+  force-exits the mount before emitting `player_died` so game-over never
+  renders through the turret camera.
+- **`ElectricTrap`** (v0.5.1): IDLE → ACTIVE → COOLDOWN state machine on an
+  enemy-masked Area3D zone. Damage is environmental via
+  `enemy.take_damage(amount)` (no weak point): a one-time burst per enemy per
+  activation (on entry, and to anyone inside at activation) plus a DoT tick
+  while they remain. Weak enemies die to the burst, tanky ones bleed — the
+  split falls out of health, so wave scaling needs no trap rework. Kills flow
+  through `die()` → `enemy_died`, so they advance rounds with zero special
+  handling. `interact()` only fires from IDLE; the prompt live-counts the
+  recharge.
 
 ## Enemies (v0.3.0)
 

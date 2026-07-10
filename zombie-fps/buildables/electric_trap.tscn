@@ -1,0 +1,84 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://buildables/electric_trap.gd" id="1_et"]
+
+[sub_resource type="BoxShape3D" id="post_shape"]
+size = Vector3(0.3, 1.0, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="mat_post"]
+albedo_color = Color(0.15, 0.16, 0.17, 1)
+metallic = 0.5
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="mesh_post"]
+material = SubResource("mat_post")
+size = Vector3(0.28, 1.0, 0.28)
+
+[sub_resource type="StandardMaterial3D" id="mat_lamp"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+emission_enabled = true
+emission = Color(0.3, 1, 0.4, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="BoxMesh" id="mesh_lamp"]
+material = SubResource("mat_lamp")
+size = Vector3(0.18, 0.12, 0.18)
+
+[sub_resource type="BoxShape3D" id="zone_shape"]
+size = Vector3(2.4, 1.6, 3.0)
+
+[sub_resource type="StandardMaterial3D" id="mat_arc"]
+shading_mode = 0
+albedo_color = Color(0.6, 0.85, 1, 1)
+
+[sub_resource type="BoxMesh" id="mesh_arc"]
+material = SubResource("mat_arc")
+size = Vector3(0.02, 0.28, 0.02)
+
+[node name="ElectricTrap" type="StaticBody3D"]
+script = ExtResource("1_et")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("post_shape")
+
+[node name="PostMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("mesh_post")
+
+[node name="Lamp" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.06, 0)
+mesh = SubResource("mesh_lamp")
+
+[node name="Zone" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Zone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 1.2)
+shape = SubResource("zone_shape")
+
+[node name="ArcParticles" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 1.2)
+emitting = false
+amount = 26
+lifetime = 0.22
+emission_shape = 3
+emission_box_extents = Vector3(1.1, 0.7, 1.4)
+direction = Vector3(0, 1, 0)
+spread = 60.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.5
+initial_velocity_max = 2.0
+mesh = SubResource("mesh_arc")
+
+[node name="HumAudio" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 1.2)
+volume_db = -6.0
+
+[node name="StatusLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+billboard = 1
+text = "READY"
+font_size = 36
+outline_size = 10

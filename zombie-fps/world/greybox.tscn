@@ -15,6 +15,10 @@
 [ext_resource type="Resource" path="res://resources/items/servo.tres" id="13_servo"]
 [ext_resource type="Resource" path="res://resources/items/ammo_9mm.tres" id="14_9mm"]
 [ext_resource type="Resource" path="res://resources/recipes/auto_turret.tres" id="15_rcp"]
+[ext_resource type="Resource" path="res://resources/recipes/manual_turret.tres" id="16_mtr"]
+[ext_resource type="Resource" path="res://resources/recipes/electric_trap.tres" id="17_etr"]
+[ext_resource type="Resource" path="res://resources/items/coil.tres" id="18_coil"]
+[ext_resource type="Resource" path="res://resources/items/ammo_762.tres" id="19_762"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -493,33 +497,55 @@ transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -6, 0.1, 0)
 
 [node name="GameOver" parent="." unique_id=1856714290 instance=ExtResource("9_go")]
 
-[node name="Scavenge" type="Node3D" parent="."]
+[node name="Scavenge" type="Node3D" parent="." unique_id=779916700]
 
-[node name="PickupScrap1" parent="Scavenge" instance=ExtResource("10_pk")]
+[node name="PickupScrap1" parent="Scavenge" unique_id=1643614007 instance=ExtResource("10_pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.35, -2)
 item = ExtResource("12_scrap")
 quantity = 2
 
-[node name="PickupScrap2" parent="Scavenge" instance=ExtResource("10_pk")]
+[node name="PickupScrap2" parent="Scavenge" unique_id=2070192472 instance=ExtResource("10_pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.35, 3.2)
 item = ExtResource("12_scrap")
 quantity = 2
 
-[node name="PickupServo" parent="Scavenge" instance=ExtResource("10_pk")]
+[node name="PickupServo" parent="Scavenge" unique_id=2025458264 instance=ExtResource("10_pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 0.35, 3.4)
 item = ExtResource("13_servo")
-quantity = 1
 
-[node name="PickupAmmo1" parent="Scavenge" instance=ExtResource("10_pk")]
+[node name="PickupAmmo1" parent="Scavenge" unique_id=1868872447 instance=ExtResource("10_pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.35, 0.8)
 item = ExtResource("14_9mm")
 quantity = 30
 
-[node name="PickupAmmo2" parent="Scavenge" instance=ExtResource("10_pk")]
+[node name="PickupAmmo2" parent="Scavenge" unique_id=259879157 instance=ExtResource("10_pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0.35, 3)
 item = ExtResource("14_9mm")
 quantity = 30
 
-[node name="TurretSpot" parent="Scavenge" instance=ExtResource("11_bs")]
+[node name="TurretSpot" parent="Scavenge" unique_id=1976487967 instance=ExtResource("11_bs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5, 0, 0.5)
 recipe = ExtResource("15_rcp")
+
+[node name="MGSpot" parent="Scavenge" instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, 2.8)
+recipe = ExtResource("16_mtr")
+
+[node name="TrapSpot" parent="Scavenge" instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -1.15)
+recipe = ExtResource("17_etr")
+
+[node name="PickupCoil" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0.35, 1)
+item = ExtResource("18_coil")
+quantity = 2
+
+[node name="PickupScrap3" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.5, 0.35, -4)
+item = ExtResource("12_scrap")
+quantity = 4
+
+[node name="PickupAmmo762" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0.35, 2.2)
+item = ExtResource("19_762")
+quantity = 150

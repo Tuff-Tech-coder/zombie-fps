@@ -5,6 +5,62 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.5.1] — 2026-07-10
+
+### Added
+
+- **Manual turret (Mounted MG)** — second craftable (5 scrap + 1 servo): a
+  WeaponData-driven MG (manual_mg.tres, 7.62mm, 20 dmg @ 12 rps, 150-round
+  mag) on a yaw/pitch rig with arc clamps. E mounts: the turret camera takes
+  over, every player input path is suppressed, and the body parks at the
+  mount — still vulnerable (rooted + exposed is the trade). While mounted:
+  mouse aims within the clamps, LMB fires (a pulled trigger always spends the
+  round, hit or miss), R refills the mag from the shared Inventory pool,
+  E dismounts. The HUD shows the MG while mounted and the sidearm after.
+  Dying while mounted force-dismounts before the game-over overlay.
+- **Electric trap** — third craftable (3 scrap + 2 coils): E-activated zone
+  over the corridor, IDLE → ACTIVE (8 s) → COOLDOWN (10 s). Environmental
+  damage (no weak points): a 100-burst to each enemy entering the live zone
+  (or already inside at activation) plus a 16-per-tick DoT while they stay.
+  Current 60-HP zombies die to the burst outright; tankier future waves will
+  survive and bleed — no rework needed. Arc particles + a synthesized looping
+  electric buzz (no binary audio). Refuses activation while live/recharging;
+  the prompt live-counts the recharge.
+- New items: Coil (part) and 7.62mm (ammo) + pickups; both recipes as .tres;
+  build spots placed (MG facing room B's spawn lane, trap covering the
+  corridor funnel); debug GRANT extended (coil, 7.62mm).
+
+### Changed
+
+- **TurretGun refactor**: the shared gun core (WeaponData hitscan, local
+  magazine, cooldown, Inventory resupply) moved out of AutoTurret into a
+  `TurretGun` base; the sentry keeps its never-waste-a-round targeting, the
+  MG gets always-spend trigger semantics — one `try_fire` serves both.
+- Project version to 0.5.1.
+
+### Verified
+
+- Built the MG (prompt costed 5/5 + 1/1, parts consumed); E mounted: viewport
+  camera switched to the turret rig, held-W moved the player zero meters,
+  aim clamps pinned at exactly −60°/+60° under massive synthetic mouse input,
+  R moved 150 rounds Inventory→mag (7.62 pool 300→150), sustained fire spent
+  61 rounds while aimed at the clamp (misses cost ammo), a re-centered burst
+  killed a zombie crossing the lane, and E dismounted — camera and movement
+  restored, prompt ray resumed. Sidearm 9mm pool untouched throughout
+  (caliber separation).
+- A zombie melee'd the mounted player once god-mode dropped and killed them:
+  death force-dismounted cleanly — the game-over overlay rendered from the
+  player camera with the Sterling re-announced on the HUD.
+- Trap: built for exactly 3 scrap + 2 coils; activation burst-killed the
+  wave zombie standing in the zone and the round cleared to PREP on that
+  kill (trap kills advance rounds); "already inside at activation" burst
+  path confirmed; E during ACTIVE/COOLDOWN refused (state and timer
+  unchanged, prompt live-counting the recharge 10→1 s); state lamp/label
+  cycled READY → LIVE → RECHARGING.
+- Emergent and kept: buildables aren't in the navmesh, so enemies jam
+  against a turret's face — it barricades its own front and has a real
+  dead-zone below its pitch clamp (attackers can hug the base).
+
 ## [0.5.0] — 2026-07-10
 
 ### Added

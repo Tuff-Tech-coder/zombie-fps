@@ -77,10 +77,12 @@ func spawn_zombies(count: int) -> void:
 func grant_supplies() -> void:
 	if not is_enabled():
 		return
-	Inventory.add(&"scrap", 8)
+	Inventory.add(&"scrap", 12)
 	Inventory.add(&"servo", 2)
+	Inventory.add(&"coil", 4)
 	Inventory.add(&"9mm", 120)
-	print("[debug] granted supplies — scrap 8, servo 2, 9mm 120")
+	Inventory.add(&"762", 300)
+	print("[debug] granted supplies — scrap 12, servo 2, coil 4, 9mm 120, 762 300")
 
 
 ## Returns the new open state (button lamp).

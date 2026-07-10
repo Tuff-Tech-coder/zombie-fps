@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://autoload/item_resource.gd" id="1_it"]
+
+[resource]
+script = ExtResource("1_it")
+id = &"762"
+display_name = "7.62mm"
+category = 2

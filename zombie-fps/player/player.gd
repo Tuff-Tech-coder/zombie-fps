@@ -51,6 +51,7 @@ var _hop_accel := 0.0  # air accel chosen at liftoff, held for the whole hop
 var _tucked := false   # airborne crouch: capsule anchored at the top
 var _focused: Node3D = null  # interactable under the crosshair
 var _last_prompt := ""
+var _mount = null  # ManualTurret while mounted (duck-typed)
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -73,7 +74,35 @@ func _ready() -> void:
 	call_deferred("_announce_health")
 
 
+## Player side of the mount handshake (v0.5.1). While mounted every player
+## input path is suppressed (look, movement, fire, interact ray) but the
+## body stays in the world and take_damage still applies — rooted and
+## exposed is the price of the mounted gun.
+func enter_mount(turret) -> void:
+	if _mount != null or _dead:
+		return
+	_mount = turret
+	velocity = Vector3.ZERO
+	global_position = turret.mount_point.global_position
+	rotation.y = turret.global_rotation.y
+	turret.on_mounted(self)
+
+
+func exit_mount() -> void:
+	if _mount == null:
+		return
+	var turret = _mount
+	_mount = null
+	_focused = null    # the dismount press must not immediately re-interact
+	_last_prompt = ""  # force a fresh prompt emit on the next focus pass
+	turret.on_dismounted()
+	camera.current = true
+	weapon._announce()  # HUD back to the sidearm
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _mount != null:
+		return  # the turret owns look input while mounted
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var motion := event as InputEventMouseMotion
 		rotate_y(-motion.relative.x * mouse_sensitivity)
@@ -86,6 +115,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	if _mount != null:
+		return  # the turret owns fire/reload/interact while mounted
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		return
 	if weapon.data.automatic:
@@ -100,6 +131,8 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _mount != null:
+		return  # parked at the mount; no movement, no interact ray
 	_update_crouch(delta)
 	_update_jump_buffer(delta)
 	_update_interact_focus()
@@ -254,6 +287,10 @@ func take_damage(amount: float) -> void:
 
 func _die() -> void:
 	_dead = true
+	# Dying mounted must hand the camera back before the overlay freezes
+	# everything, or game-over renders through the turret's eyes.
+	if _mount != null:
+		exit_mount()
 	# The game-over overlay listens for this and freezes the tree.
 	EventBus.player_died.emit()
 
