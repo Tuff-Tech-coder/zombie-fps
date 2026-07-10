@@ -7,9 +7,20 @@ extends CharacterBody3D
 @export var walk_speed := 4.5
 @export var sprint_multiplier := 1.55
 @export var crouch_multiplier := 0.55
-@export var acceleration := 40.0    ## m/s² on the ground
-@export var air_control := 0.35    ## fraction of ground acceleration kept airborne
+@export var acceleration := 40.0    ## m/s² on the ground (doubles as friction)
 @export var jump_velocity := 4.6
+
+@export_group("Bunny Hop")
+## Hard horizontal ceiling as a multiple of walk_speed. Only ever bites while
+## airborne — grounded movement is already clamped to walk/sprint.
+@export var bhop_speed_cap_mult := 2.2
+## Per-tick air wish-speed cap (the Source "30 units" analog). Small on
+## purpose: it kills straight-line air gain while strafe+turn stays additive.
+@export var air_speed_cap := 0.7
+@export var air_accelerate := 60.0      ## autohop / held-jump hops: slow build
+@export var air_accelerate_tap := 90.0  ## fresh-tap hops: fast build, same cap
+@export var jump_buffer_time := 0.1     ## seconds a jump press stays usable
+@export var autohop_enabled := true     ## held jump re-hops on landing
 
 @export_group("Look")
 @export var mouse_sensitivity := 0.0022  ## radians per mouse pixel
@@ -23,10 +34,16 @@ extends CharacterBody3D
 @export_group("Stats")
 @export var max_health := 100.0
 
+## Eye sits this far below the capsule top.
+const EYE_DROP := 0.15
+
 var health := 100.0
 var _pitch := 0.0
 var _crouching := false
 var _dead := false
+var _jump_buffer := 0.0
+var _hop_accel := 0.0  # air accel chosen at liftoff, held for the whole hop
+var _tucked := false   # airborne crouch: capsule anchored at the top
 
 @onready var head: Node3D = $Head
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
@@ -36,6 +53,7 @@ var _dead := false
 
 func _ready() -> void:
 	health = max_health
+	_hop_accel = air_accelerate
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	weapon.fired.connect(_on_weapon_fired)
 	# Deferred so the HUD (a sibling) is connected before the first broadcast.
@@ -68,23 +86,76 @@ func _process(_delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_crouch(delta)
-
-	if not is_on_floor():
-		velocity += get_gravity() * delta
-	elif Input.is_action_just_pressed("jump") and not _crouching:
-		velocity.y = jump_velocity
+	_update_jump_buffer(delta)
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var wish := global_transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
 	wish.y = 0.0
 	if wish.length_squared() > 0.0:
 		wish = wish.normalized()
-	# Reduced-but-nonzero air accel keeps jumps steerable.
-	var accel := acceleration if is_on_floor() else acceleration * air_control
-	var hvel := Vector3(velocity.x, 0.0, velocity.z).move_toward(wish * _current_speed(), accel * delta)
-	velocity.x = hvel.x
-	velocity.z = hvel.z
+
+	if is_on_floor():
+		var tap := _jump_buffer > 0.0
+		if tap or (autohop_enabled and Input.is_action_pressed("jump")):
+			_jump_buffer = 0.0
+			velocity.y = jump_velocity
+			# The accel picked at liftoff rides the whole hop. A buffered
+			# fresh tap earns the faster build even if jump is also held,
+			# so rhythmic re-tapping beats holding.
+			_hop_accel = air_accelerate_tap if tap else air_accelerate
+			# Below run speed the hop frame still gets ground acceleration —
+			# otherwise holding jump from a standstill pogos at air-cap speed
+			# forever. At or above run speed it's skipped: that's the
+			# momentum carry that makes bhop work.
+			if Vector2(velocity.x, velocity.z).length() < _current_speed():
+				var hvel := Vector3(velocity.x, 0.0, velocity.z)\
+						.move_toward(wish * _current_speed(), acceleration * delta)
+				velocity.x = hvel.x
+				velocity.z = hvel.z
+			_accelerate(wish, air_speed_cap, _hop_accel, delta)
+		else:
+			_hop_accel = air_accelerate  # ledge walk-offs get the base accel
+			# Grounded move_toward doubles as friction: a missed hop bleeds
+			# speed back toward walk/sprint.
+			var hvel := Vector3(velocity.x, 0.0, velocity.z)\
+					.move_toward(wish * _current_speed(), acceleration * delta)
+			velocity.x = hvel.x
+			velocity.z = hvel.z
+	else:
+		velocity += get_gravity() * delta
+		_accelerate(wish, air_speed_cap, _hop_accel, delta)
+
+	_cap_horizontal_speed()
 	move_and_slide()
+
+
+func _update_jump_buffer(delta: float) -> void:
+	if Input.is_action_just_pressed("jump"):
+		_jump_buffer = jump_buffer_time
+	else:
+		_jump_buffer = maxf(_jump_buffer - delta, 0.0)
+
+
+## Quake-style air accelerate: only the velocity component along wishdir is
+## capped (at wishspeed), so strafing while turning into the strafe keeps
+## adding speed, while pushing straight ahead adds nothing.
+func _accelerate(wishdir: Vector3, wishspeed: float, accel: float, delta: float) -> void:
+	var current := Vector2(velocity.x, velocity.z).dot(Vector2(wishdir.x, wishdir.z))
+	var add := wishspeed - current
+	if add <= 0.0:
+		return
+	var amount := minf(accel * wishspeed * delta, add)
+	velocity.x += wishdir.x * amount
+	velocity.z += wishdir.z * amount
+
+
+func _cap_horizontal_speed() -> void:
+	var flat := Vector2(velocity.x, velocity.z)
+	var cap := walk_speed * bhop_speed_cap_mult
+	if flat.length() > cap:
+		flat = flat.normalized() * cap
+		velocity.x = flat.x
+		velocity.z = flat.y
 
 
 func _current_speed() -> float:
@@ -101,11 +172,27 @@ func _update_crouch(delta: float) -> void:
 		want = true  # something overhead — stay down until it's clear
 	_crouching = want
 	var target := crouch_height if _crouching else stand_height
-	if absf(capsule.height - target) < 0.001:
-		return
 	capsule.height = lerpf(capsule.height, target, minf(crouch_lerp_speed * delta, 1.0))
-	collision_shape.position.y = capsule.height * 0.5
-	head.position.y = capsule.height - 0.15
+
+	# Airborne duck anchors the capsule TOP so the feet tuck up by
+	# (stand - crouch) ≈ 0.6 m — the reach that lets a crouch-jump mount a
+	# ledge a plain jump can't. Grounded crouch stays feet-anchored.
+	var tucked := _crouching and not is_on_floor()
+	if _tucked and not tucked and is_on_floor():
+		# Landing while tucked: lift the origin so the capsule bottom (the
+		# feet) stays put through the re-anchor. Keeps ledge landings from
+		# ejecting the body and keeps the eye continuous.
+		global_position.y += stand_height - capsule.height
+	_tucked = tucked
+
+	# The shape moves instantly (physics must be exact); the eye lerps so
+	# transitions never snap the camera.
+	if tucked:
+		collision_shape.position.y = stand_height - capsule.height * 0.5
+	else:
+		collision_shape.position.y = capsule.height * 0.5
+	var eye_target := (stand_height - EYE_DROP) if tucked else (capsule.height - EYE_DROP)
+	head.position.y = lerpf(head.position.y, eye_target, minf(crouch_lerp_speed * delta, 1.0))
 
 
 func _has_headroom() -> bool:

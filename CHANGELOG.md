@@ -5,6 +5,56 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.4.2] — 2026-07-10
+
+> Off-roadmap movement work — not a DESIGN_DOC §12 milestone. Versioned as a
+> patch to keep minor versions aligned with the roadmap.
+
+### Added
+
+- **Bunny hopping**: airborne movement switched from clamped `move_toward` to
+  Quake/Source-style air accelerate — only the velocity component along the
+  wish direction is capped (small `air_speed_cap`), so strafe + same-direction
+  mouse turn builds speed while holding W straight gains nothing. Hard
+  horizontal ceiling at `walk_speed × bhop_speed_cap_mult` (9.9 m/s default,
+  ~40% over sprint). Grounded movement is unchanged and doubles as friction:
+  land without re-jumping and speed bleeds back to walk/sprint.
+- **Autohop + manual tap, both live**: held jump re-hops on every landing at
+  the base air accel; a fresh press (jump-buffered ~0.1 s, honored on the
+  landing frame) earns a faster air accel for that whole hop — rhythmic
+  re-tapping reaches the same cap in fewer hops. Walking off a ledge without
+  jumping falls at the base accel. All tuning exported on the player.
+- **Crouch jumping**: jumping while crouched is allowed; ducking while
+  airborne re-anchors the capsule to its top so the feet tuck up by
+  (stand − crouch) ≈ 0.6 m — enough to mount ledges a normal jump can't. No
+  extra jump velocity: the benefit is purely the tuck. Landing while tucked
+  lifts the body origin so the feet (and eye line) stay continuous, then
+  stands up only with headroom, per the existing check.
+
+### Changed
+
+- A hop that starts below run speed still receives ground acceleration on the
+  hop frame, so holding jump from a standstill accelerates toward walk speed
+  instead of pogoing at air-cap speed; at or above run speed the hop frame
+  skips ground friction entirely (the momentum carry that makes bhop work).
+- Removed the now-dead `air_control` export (superseded by air accelerate).
+- Project version to 0.4.2.
+
+### Verified
+
+- Ground feel unchanged: walk 4.50, sprint 6.97, crouch multiplier intact.
+- Straight-W autohop never exceeded the 0.7 m/s air wish cap (no free speed);
+  strafe+turn autohop built 6.97 → 9.83 peak; manual-tap built faster at every
+  sample (7.89 vs 7.08 at t=2) and hit the 9.90 cap by hop 5; no pattern ever
+  exceeded 9.90 (the exact configured ceiling).
+- A missed hop bled 9.83 → 4.50 within a second of grounded running.
+- Standstill held-jump climbed 0.70 → 4.03 across six hops (pogo-lock fixed).
+- Against a 1.35 m test ledge: normal jump bounced off the face; crouch-jump
+  mounted it and stood up on top at exactly ledge height with no ejection
+  (verified with a runtime-spawned platform; a 1.1 m greybox wall turned out
+  to be mountable by a plain jump within physics tolerance, so it can't
+  differentiate).
+
 ## [0.4.1] — 2026-07-09
 
 ### Fixed
