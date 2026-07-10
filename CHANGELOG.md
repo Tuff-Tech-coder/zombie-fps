@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.4.1] — 2026-07-09
+
+### Fixed
+
+- A round could be declared cleared while a live debug-spawned zombie was
+  still on the field (debug spawns are intentionally untracked, so they didn't
+  block round-clear). The clear is now gated on the field being free of *live*
+  enemies (`EnemyPool.has_live_enemies()`, which excludes corpses in their
+  death animation), and the clear condition is re-evaluated on every enemy
+  death — tracked or not — so the deferred clear fires the moment the last
+  live enemy dies.
+
+### Verified
+
+- Killing a full round wave with a debug zombie still chasing defers the clear
+  (phase stays ROUND, tracked=0, live=true); killing that zombie closes the
+  round synchronously on the killing blow; a plain round with no debug spawns
+  still clears exactly on its last kill (spawned=budget, no added delay);
+  a lingering corpse (pool active=1, live=false) does not block the clear;
+  wave-end still resets to a zeroed, empty state.
+
 ## [0.4.0] — 2026-07-09
 
 ### Added

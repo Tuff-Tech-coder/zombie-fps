@@ -84,14 +84,20 @@ func _try_spawn() -> void:
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
-	if not _tracked.has(enemy):
-		return  # debug-button spawn — not part of the round
-	_tracked.erase(enemy)
+	# Untracked (debug-button) deaths still fall through to the clear check:
+	# a round must never close while ANY live enemy is on the field, so a
+	# lingering debug zombie defers the clear until it too is dead.
+	var was_tracked := _tracked.has(enemy)
+	if was_tracked:
+		_tracked.erase(enemy)
 	if not running or GameState.phase != GameState.Phase.ROUND:
 		return
-	if _spawned_this_round < _budget:
+	if was_tracked and _spawned_this_round < _budget:
 		_try_spawn()  # top up without waiting for the interval
-	elif _tracked.is_empty():
+	elif _spawned_this_round >= _budget and _tracked.is_empty() \
+			and not EnemyPool.has_live_enemies():
+		# die() flips state to DEAD before emitting, so the final kill closes
+		# the round here — corpses mid-death-animation never block it.
 		_end_round()
 
 

@@ -36,6 +36,16 @@ func release_all() -> void:
 			enemy.deactivate()
 
 
+## True while any enemy on the field is still a threat. Corpses playing out
+## their death animation (state == DEAD) don't count — they're active in the
+## pool sense but already dead in the round sense.
+func has_live_enemies() -> bool:
+	for enemy in _pool:
+		if enemy.active and enemy.state != Enemy.State.DEAD:
+			return true
+	return false
+
+
 func active_count() -> int:
 	var count := 0
 	for enemy in _pool:
