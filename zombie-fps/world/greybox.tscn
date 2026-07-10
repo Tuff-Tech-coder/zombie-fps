@@ -9,6 +9,12 @@
 [ext_resource type="PackedScene" path="res://world/debug_door.tscn" id="7_dd"]
 [ext_resource type="PackedScene" path="res://world/debug_panel.tscn" id="8_dp"]
 [ext_resource type="PackedScene" path="res://ui/game_over.tscn" id="9_go"]
+[ext_resource type="PackedScene" path="res://world/pickup.tscn" id="10_pk"]
+[ext_resource type="PackedScene" path="res://world/build_spot.tscn" id="11_bs"]
+[ext_resource type="Resource" path="res://resources/items/scrap.tres" id="12_scrap"]
+[ext_resource type="Resource" path="res://resources/items/servo.tres" id="13_servo"]
+[ext_resource type="Resource" path="res://resources/items/ammo_9mm.tres" id="14_9mm"]
+[ext_resource type="Resource" path="res://resources/recipes/auto_turret.tres" id="15_rcp"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -486,3 +492,34 @@ transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -6, 0.1, 0)
 [node name="HUD" parent="." unique_id=176900349 instance=ExtResource("2_hud")]
 
 [node name="GameOver" parent="." unique_id=1856714290 instance=ExtResource("9_go")]
+
+[node name="Scavenge" type="Node3D" parent="."]
+
+[node name="PickupScrap1" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.35, -2)
+item = ExtResource("12_scrap")
+quantity = 2
+
+[node name="PickupScrap2" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.35, 3.2)
+item = ExtResource("12_scrap")
+quantity = 2
+
+[node name="PickupServo" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 0.35, 3.4)
+item = ExtResource("13_servo")
+quantity = 1
+
+[node name="PickupAmmo1" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.35, 0.8)
+item = ExtResource("14_9mm")
+quantity = 30
+
+[node name="PickupAmmo2" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0.35, 3)
+item = ExtResource("14_9mm")
+quantity = 30
+
+[node name="TurretSpot" parent="Scavenge" instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5, 0, 0.5)
+recipe = ExtResource("15_rcp")

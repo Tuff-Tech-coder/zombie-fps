@@ -1,0 +1,111 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://buildables/auto_turret.gd" id="1_at"]
+[ext_resource type="Resource" path="res://resources/weapons/turret_smg.tres" id="2_wd"]
+
+[sub_resource type="BoxShape3D" id="body_shape"]
+size = Vector3(0.5, 1.05, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="mat_base"]
+albedo_color = Color(0.16, 0.17, 0.18, 1)
+metallic = 0.5
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="mesh_base"]
+material = SubResource("mat_base")
+size = Vector3(0.5, 0.5, 0.5)
+
+[sub_resource type="BoxMesh" id="mesh_column"]
+material = SubResource("mat_base")
+size = Vector3(0.16, 0.45, 0.16)
+
+[sub_resource type="StandardMaterial3D" id="mat_head"]
+albedo_color = Color(0.22, 0.24, 0.26, 1)
+metallic = 0.6
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="mesh_head"]
+material = SubResource("mat_head")
+size = Vector3(0.3, 0.2, 0.42)
+
+[sub_resource type="BoxMesh" id="mesh_barrel"]
+material = SubResource("mat_head")
+size = Vector3(0.06, 0.06, 0.34)
+
+[sub_resource type="StandardMaterial3D" id="mat_flash"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_color = Color(1, 0.8, 0.5, 0.9)
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="mesh_flash"]
+material = SubResource("mat_flash")
+size = Vector2(0.2, 0.2)
+
+[sub_resource type="SphereShape3D" id="detect_shape"]
+radius = 12.0
+
+[node name="AutoTurret" type="StaticBody3D"]
+script = ExtResource("1_at")
+data = ExtResource("2_wd")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.525, 0)
+shape = SubResource("body_shape")
+
+[node name="Base" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("mesh_base")
+
+[node name="Column" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+mesh = SubResource("mesh_column")
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.98, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Head"]
+mesh = SubResource("mesh_head")
+
+[node name="Barrel" type="MeshInstance3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.35)
+mesh = SubResource("mesh_barrel")
+
+[node name="Muzzle" type="Node3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.55)
+
+[node name="Flash" type="Node3D" parent="Head/Muzzle"]
+visible = false
+
+[node name="FlashMesh" type="MeshInstance3D" parent="Head/Muzzle/Flash"]
+cast_shadow = 0
+mesh = SubResource("mesh_flash")
+
+[node name="FlashLight" type="OmniLight3D" parent="Head/Muzzle/Flash"]
+light_color = Color(1, 0.75, 0.45, 1)
+light_energy = 2.0
+omni_range = 4.0
+
+[node name="Detection" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Detection"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("detect_shape")
+
+[node name="FlashTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="FireAudio" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+volume_db = -8.0
+max_polyphony = 3
+
+[node name="StatusLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+billboard = 1
+text = "0/120"
+font_size = 40
+outline_size = 10

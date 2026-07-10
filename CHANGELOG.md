@@ -5,6 +5,65 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.5.0] — 2026-07-10
+
+### Added
+
+- **Items & Inventory** (DESIGN_DOC §4): `ItemResource` (.tres under
+  resources/items/ — 9mm ammo, scrap, servo) and the `Inventory` autoload — one
+  bag of id→count with add/consume/count/has/reset, an id→item registry for
+  UI names, and `inventory_changed` on every mutation.
+- **Ammo unification**: `WeaponData.ammo_type` names the caliber; a weapon's
+  reserve now IS the Inventory's count of that caliber. Reloads consume from
+  the shared pool; run start seeds it (player resets + reseeds the Inventory,
+  mirroring the enemy-pool restart hygiene).
+- **Interaction system**: `interact` action (E), physics layer 4
+  "interactable", and a duck-typed Interactable contract
+  (`interact(player)` / `get_interact_prompt()`) probed by a short
+  camera-center ray; prompts stream to the HUD via
+  `interact_prompt_changed` and refresh live as costs/counts change.
+- **Pickups**: spinning labeled world items on the interactable layer (never
+  block movement); E adds to the Inventory, emits `resource_picked_up`, and
+  removes the pickup. Scrap/servo/9mm placed through the greybox.
+- **Building foundation**: `BuildRecipe` .tres (inputs + scene),
+  `BuildSpot` fixed locations (ghost + costed prompt flagging missing parts,
+  consume-and-instance on E, EMPTY again on scene reload), and the
+  invulnerable solid `Buildable` base.
+- **Auto turret** — first craftable (4 scrap + 1 servo): WeaponData-driven
+  sentry (turret_smg.tres, 9mm) with a local 120-round magazine that starts
+  empty. Targets the nearest live enemy inside its detection sphere, fires the
+  same `take_hit` hitscan contract as the player's gun (weak points included),
+  holds fire on walls and corpses, idles when empty, and resupplies via E from
+  the SAME 9mm pool the player's Sterling reloads from.
+- HUD: scavenged-supplies readout, interaction prompt under the crosshair,
+  and the reserve counter now tracks the shared ammo pool live.
+- Debug: GRANT PARTS panel button (+`DebugManager.grant_supplies`), gated
+  behind the debug flag like everything else.
+
+### Changed
+
+- `Weapon.reserve` (local var) replaced by `reserve()` reading the Inventory.
+- EventBus: `inventory_changed`, `interact_prompt_changed` added;
+  `resource_picked_up` is now live.
+- Project version to 0.5.0.
+
+### Verified
+
+- E-pickup: prompt "E: Take Scrap ×2" from the real ray → bag scrap=2, HUD
+  supplies update; run-start seed put exactly 120 9mm in the bag.
+- Build gate: prompt flagged "Scrap 2/4, Servo 0/1", E refused (no turret, no
+  consumption); after GRANT the prompt live-updated to 4/4 1/1 and E built the
+  turret, consuming exactly 4 scrap + 1 servo — and the ray seamlessly began
+  returning the built turret's resupply prompt.
+- Resupply moved 120 rounds bag→turret (bag 240→120); a spawned zombie died to
+  exactly six 10-damage turret rounds (120→114 on the live status label) and
+  the turret held fire afterward with ammo remaining.
+- Crossover: reloading the Sterling pulled 11 rounds from the same pool
+  (mag 19→30, 9mm 120→109) — turret rounds are rounds the sidearm can't fire.
+- Invulnerability: 11 player rounds point-blank left the turret untouched.
+- Death → restart: bag wiped and reseeded (scrap 0, servo 0, 9mm 120), turret
+  gone, pickups restored; with the debug flag off, grant is inert.
+
 ## [0.4.2] — 2026-07-10
 
 > Off-roadmap movement work — not a DESIGN_DOC §12 milestone. Versioned as a

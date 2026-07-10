@@ -10,7 +10,6 @@ signal fired
 @export var data: WeaponData
 
 var mag := 0
-var reserve := 0
 var reloading := false
 
 var _cooldown := 0.0
@@ -19,10 +18,15 @@ var _cooldown := 0.0
 @onready var _dry_audio: AudioStreamPlayer = get_node_or_null("DryAudio")
 
 
+## Reserve ammo lives in the shared Inventory (since v0.5.0) — turrets feed
+## on the same pool, so every loaded turret round is one the gun can't fire.
+func reserve() -> int:
+	return Inventory.count(data.ammo_type)
+
+
 func _ready() -> void:
 	assert(data != null, "Weapon requires a WeaponData resource")
 	mag = data.mag_size
-	reserve = data.reserve_ammo
 	if _reload_audio:
 		_reload_audio.stream = PlaceholderSfx.reload_click()
 	if _dry_audio:
@@ -50,11 +54,11 @@ func try_fire() -> void:
 	_do_fire()
 	fired.emit()
 	EventBus.weapon_fired.emit(self)
-	EventBus.ammo_changed.emit(mag, reserve)
+	EventBus.ammo_changed.emit(mag, reserve())
 
 
 func start_reload() -> void:
-	if reloading or reserve <= 0 or mag == data.mag_size:
+	if reloading or reserve() <= 0 or mag == data.mag_size:
 		return
 	reloading = true
 	if _reload_audio:
@@ -63,19 +67,19 @@ func start_reload() -> void:
 	await get_tree().create_timer(data.reload_time).timeout
 	if not is_inside_tree():
 		return
-	var loaded := mini(data.mag_size - mag, reserve)
+	var loaded := mini(data.mag_size - mag, reserve())
 	mag += loaded
-	reserve -= loaded
+	Inventory.consume(data.ammo_type, loaded)
 	reloading = false
 	if _reload_audio:
 		_reload_audio.play()
 	EventBus.weapon_reload_finished.emit()
-	EventBus.ammo_changed.emit(mag, reserve)
+	EventBus.ammo_changed.emit(mag, reserve())
 
 
 func _announce() -> void:
 	EventBus.weapon_equipped.emit(data)
-	EventBus.ammo_changed.emit(mag, reserve)
+	EventBus.ammo_changed.emit(mag, reserve())
 
 
 func _do_fire() -> void:

@@ -9,6 +9,7 @@ automatic = true
 damage = 12.0
 fire_rate = 9.0
 mag_size = 30
+ammo_type = &"9mm"
 reserve_ammo = 120
 reload_time = 2.0
 spread_degrees = 1.2

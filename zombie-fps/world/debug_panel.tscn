@@ -26,29 +26,33 @@ outline_size = 12
 modulate = Color(1, 0.7, 0.3, 1)
 
 [node name="Spawn1" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.86, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.03, 0, 0)
 action = "spawn_1"
 
 [node name="Spawn10" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.24, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 0, 0)
 action = "spawn_10"
 
 [node name="InfAmmo" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.87, 0, 0)
 action = "infinite_ammo"
 
 [node name="InfHealth" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0, 0)
 action = "infinite_health"
 
 [node name="EnemyHealthBars" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.62, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0, 0)
 action = "enemy_health_bars"
 
 [node name="Door" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.24, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.87, 0, 0)
 action = "door"
 
 [node name="Wave" parent="." instance=ExtResource("1_btn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.86, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 0, 0)
 action = "wave"
+
+[node name="Grant" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.03, 0, 0)
+action = "grant"

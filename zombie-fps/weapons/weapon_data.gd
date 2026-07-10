@@ -8,7 +8,10 @@ extends Resource
 @export var damage := 10.0
 @export var fire_rate := 8.0        ## shots per second
 @export var mag_size := 30
-@export var reserve_ammo := 120     ## starting reserve
+## Caliber — matches an ItemResource id (e.g. &"9mm"). All reserve ammo of
+## this type lives in the Inventory, shared with turrets (since v0.5.0).
+@export var ammo_type: StringName = &""
+@export var reserve_ammo := 120     ## starting rounds seeded into Inventory at run start
 @export var reload_time := 2.0      ## seconds
 @export var spread_degrees := 1.5   ## max deviation from aim, per axis
 @export var range_meters := 60.0

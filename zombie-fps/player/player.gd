@@ -31,11 +31,16 @@ extends CharacterBody3D
 @export var crouch_height := 1.2
 @export var crouch_lerp_speed := 10.0
 
+@export_group("Interaction")
+@export var interact_range := 2.5
+
 @export_group("Stats")
 @export var max_health := 100.0
 
 ## Eye sits this far below the capsule top.
 const EYE_DROP := 0.15
+## Physics layer 4 ("interactable") as a mask value.
+const INTERACT_MASK := 8
 
 var health := 100.0
 var _pitch := 0.0
@@ -44,8 +49,11 @@ var _dead := false
 var _jump_buffer := 0.0
 var _hop_accel := 0.0  # air accel chosen at liftoff, held for the whole hop
 var _tucked := false   # airborne crouch: capsule anchored at the top
+var _focused: Node3D = null  # interactable under the crosshair
+var _last_prompt := ""
 
 @onready var head: Node3D = $Head
+@onready var camera: Camera3D = $Head/Camera3D
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var capsule: CapsuleShape3D = collision_shape.shape as CapsuleShape3D
 @onready var weapon: Weapon = $Head/Camera3D/WeaponHolder.get_child(0) as Weapon
@@ -54,6 +62,11 @@ var _tucked := false   # airborne crouch: capsule anchored at the top
 func _ready() -> void:
 	health = max_health
 	_hop_accel = air_accelerate
+	# Fresh run: the Inventory autoload survives scene reloads, so the run
+	# owner resets and reseeds it here — mirrors EnemyPool.release_all().
+	Inventory.reset()
+	if weapon.data.ammo_type != &"":
+		Inventory.add(weapon.data.ammo_type, weapon.data.reserve_ammo)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	weapon.fired.connect(_on_weapon_fired)
 	# Deferred so the HUD (a sibling) is connected before the first broadcast.
@@ -82,11 +95,14 @@ func _process(_delta: float) -> void:
 		weapon.try_fire()
 	if Input.is_action_just_pressed("reload"):
 		weapon.start_reload()
+	if Input.is_action_just_pressed("interact") and _focused:
+		_focused.interact(self)
 
 
 func _physics_process(delta: float) -> void:
 	_update_crouch(delta)
 	_update_jump_buffer(delta)
+	_update_interact_focus()
 
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var wish := global_transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
@@ -127,6 +143,22 @@ func _physics_process(delta: float) -> void:
 
 	_cap_horizontal_speed()
 	move_and_slide()
+
+
+## Short camera-center ray against the interactable layer. Tracks what's
+## under the crosshair and keeps the HUD prompt current — prompts are
+## re-read every frame because their text is stateful (costs, ammo counts).
+func _update_interact_focus() -> void:
+	var from := camera.global_position
+	var to := from - camera.global_basis.z * interact_range
+	var query := PhysicsRayQueryParameters3D.create(from, to, INTERACT_MASK, [get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var collider: Object = hit.get("collider") if not hit.is_empty() else null
+	_focused = collider if (collider is Node3D and collider.has_method("interact")) else null
+	var prompt: String = _focused.get_interact_prompt() if _focused else ""
+	if prompt != _last_prompt:
+		_last_prompt = prompt
+		EventBus.interact_prompt_changed.emit(prompt)
 
 
 func _update_jump_buffer(delta: float) -> void:

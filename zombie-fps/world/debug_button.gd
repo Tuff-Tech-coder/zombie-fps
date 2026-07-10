@@ -11,11 +11,12 @@ const LABELS := {
 	"infinite_health": "INF HP",
 	"enemy_health_bars": "ENEMY HP",
 	"door": "DOOR",
-	"wave": "WAVE (STUB)",
+	"wave": "WAVE",
+	"grant": "GRANT PARTS",
 }
 const TOGGLES := ["infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave"]
 
-@export_enum("spawn_1", "spawn_10", "infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave")
+@export_enum("spawn_1", "spawn_10", "infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "grant")
 var action := "spawn_1"
 
 var _mat: StandardMaterial3D
@@ -49,6 +50,8 @@ func take_hit(_damage: float, _hit_pos: Vector3, _normal: Vector3, _shape_index:
 			_lit = DebugManager.toggle_door()
 		"wave":
 			_lit = DebugManager.toggle_wave_stub()
+		"grant":
+			DebugManager.grant_supplies()
 	if action in TOGGLES:
 		_apply_lamp()
 	else:

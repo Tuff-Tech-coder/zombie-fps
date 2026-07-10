@@ -73,6 +73,16 @@ func spawn_zombies(count: int) -> void:
 			% [spawned, EnemyPool.active_count(), EnemyPool.total_count()])
 
 
+## Shortcut past scavenging so crafting is testable in isolation.
+func grant_supplies() -> void:
+	if not is_enabled():
+		return
+	Inventory.add(&"scrap", 8)
+	Inventory.add(&"servo", 2)
+	Inventory.add(&"9mm", 120)
+	print("[debug] granted supplies — scrap 8, servo 2, 9mm 120")
+
+
 ## Returns the new open state (button lamp).
 func toggle_door() -> bool:
 	if not is_enabled():

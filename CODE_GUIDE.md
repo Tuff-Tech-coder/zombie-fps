@@ -13,7 +13,8 @@ The Godot project lives in `zombie-fps/`. Top-level folders:
 | `player/` | FPS controller scene + script |
 | `weapons/` | `Weapon` base, per-type subclasses, weapon scenes, shared weapon FX |
 | `enemies/` | `Enemy` base, per-type subclasses, `EnemyPool`/`EnemyNavManager`, imported models under `enemies/models/<name>/` (with their LICENSE) |
-| `world/` | Levels (greybox for now) and world objects (targets, lights, debug fixtures) |
+| `buildables/` | `Buildable` base + built defenses (auto turret; manual turret/trap in v0.5.1), `BuildRecipe` schema |
+| `world/` | Levels (greybox for now) and world objects (targets, lights, pickups, build spots, debug fixtures) |
 | `ui/` | HUD, overlays (film grain, game over), future menus |
 | `resources/` | **Data only** — authored `.tres` files, grouped by domain (`resources/weapons/`, later `resources/perks/`, `resources/formulas/`) |
 
@@ -76,6 +77,45 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
   are picked up by name if present.
 - **Damage to the player** goes through `Player.take_damage(amount)` — never write
   `health` directly. It emits `player_health_changed` and handles death.
+- **Interactables** (v0.5.0) are duck-typed like hittables: implement
+  `interact(player) -> void` and `get_interact_prompt() -> String`, and sit on
+  physics layer 4 ("interactable") so the player's short camera ray finds them.
+  Prompts are re-read every frame (their text is stateful — costs, counts), and
+  reach the HUD via `EventBus.interact_prompt_changed`. Pickups, BuildSpots, and
+  buildable resupply are the implementations. Interactable-only bodies (layer 4,
+  mask 0) block nothing; buildables add the world layer to be solid.
+- **Ammo lives in the Inventory** (v0.5.0): `WeaponData.ammo_type` names an
+  ItemResource id (the caliber, e.g. `&"9mm"`); a weapon's reserve IS
+  `Inventory.count(ammo_type)`, and turret feeds consume the same pool. Only
+  the magazine is weapon-local. `reserve_ammo` means "rounds seeded into the
+  Inventory at run start" — the player does the seeding in `_ready` right after
+  `Inventory.reset()` (run-owner hygiene, like `EnemyPool.release_all()`).
+
+## Items, Inventory & building (v0.5.0)
+
+- **`ItemResource`** (`autoload/item_resource.gd`): id (StringName; calibers use
+  the caliber as id), display_name, icon, category (COMPOUND/PART/AMMO).
+  Authored under `resources/items/`; the Inventory autoload loads that folder
+  into its id→item registry at boot (pickups also register their item, so a
+  new item works even before it's in the folder scan).
+- **`Inventory`** (autoload): the single bag of id→count. API: `add`,
+  `consume` (clamped, returns success), `count`, `has(inputs)`, `reset()`.
+  Every mutation emits `EventBus.inventory_changed(id, count)` — the HUD and
+  prompts read counts, never the bag.
+- **`BuildRecipe`** (`buildables/build_recipe.gd`): inputs
+  (`[{ "id": StringName, "qty": int }]`) + buildable_scene + display_name,
+  authored under `resources/recipes/`. A new buildable is a new .tres.
+- **`BuildSpot`** (fixed locations only — free placement is firewalled):
+  EMPTY shows a ghost + costed prompt; `interact` consumes inputs and instances
+  the recipe's scene at the spot, then drops off the interactable layer so the
+  built thing takes over the ray. Scene reload = spot back to EMPTY; buildables
+  never persist across a run.
+- **`Buildable`** base: invulnerable by design (no `take_hit`), solid on
+  world + interactable layers. `AutoTurret` is the reference subclass — driven
+  by a `WeaponData` .tres, local magazine loaded via interact from the shared
+  ammo pool, targets the nearest live enemy in its Area3D, fires with the same
+  `take_hit` contract as the player's gun (weak points work for free), never
+  wastes rounds on walls or corpses.
 
 ## Enemies (v0.3.0)
 
