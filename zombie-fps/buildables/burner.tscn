@@ -1,0 +1,64 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://buildables/burner.gd" id="1_bn"]
+
+[sub_resource type="BoxShape3D" id="burner_shape"]
+size = Vector3(0.6, 0.9, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="mat_body"]
+albedo_color = Color(0.2, 0.2, 0.22, 1)
+metallic = 0.5
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="mesh_body"]
+material = SubResource("mat_body")
+size = Vector3(0.5, 0.7, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="mat_flame"]
+shading_mode = 0
+albedo_color = Color(1, 0.55, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="mesh_flame"]
+material = SubResource("mat_flame")
+size = Vector3(0.05, 0.16, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="mat_grate"]
+albedo_color = Color(0.1, 0.1, 0.1, 1)
+metallic = 0.6
+
+[sub_resource type="BoxMesh" id="mesh_grate"]
+material = SubResource("mat_grate")
+size = Vector3(0.55, 0.06, 0.55)
+
+[node name="Burner" type="StaticBody3D"]
+script = ExtResource("1_bn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("burner_shape")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+mesh = SubResource("mesh_body")
+
+[node name="Grate" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.73, 0)
+mesh = SubResource("mesh_grate")
+
+[node name="Flame" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.62, 0)
+mesh = SubResource("mesh_flame")
+
+[node name="FlameLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+light_color = Color(1, 0.6, 0.25, 1)
+light_energy = 1.2
+omni_range = 3.0
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+billboard = 1
+modulate = Color(1, 0.7, 0.4, 1)
+text = "BURNER"
+font_size = 32
+outline_size = 8

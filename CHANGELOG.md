@@ -5,6 +5,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.6.0] — 2026-07-11
+
+### Added
+
+- **Perk framework** (DESIGN_DOC §4.2): `Perk` resources (delivery/trigger/
+  tier + effect), `PerkRecipe` formulas, both authored under resources/perks/.
+  `PerkManager` fills its stub: 4-slot cap, apply/remove/swap/clear,
+  `get_multiplier` stat aggregation, effect-node attach/detach,
+  `perks_changed`. `CraftingSystem` fills its stub as the §8.1 formula
+  resolver: tier-gated exact-multiset matching, crafting into Inventory
+  doses, run-scoped recipe reveals.
+- **Four perks**: Stamin-Up (move ×1.2), Double Tap (fire rate ×1.33),
+  Deadshot Daiquiri (spread ×0.4) — bench-tier pure data; Electric Cherry —
+  lab-tier scripted ON_RELOAD: a player-centered AoE shock (stun + damage)
+  scaling with mag emptiness, floored so a near-full reload still zaps.
+  Enemies gained `stun(duration)`.
+- **Crafting stations**: pre-placed bench; the lab is a buildable (4 scrap +
+  2 coils) whose formula needs a HEATED compound — the new Burner buildable
+  (2 scrap + 1 coil) converts cherry extract → concentrate. Free-combine UI
+  (mouse released, player frozen): compounds → mix → Combine validates;
+  match crafts a dose, miss reads "unstable" and consumes nothing; held
+  doses apply from the same screen. No recipe browser — a RecipeNote pickup
+  reveals a formula for the run only (no meta-progression).
+- **HUD perk slots**: the reserved region now shows a chip per active perk;
+  at the 4-cap every chip gains the gold border (§4.2).
+- Eight COMPOUND items + pickups scattered through the greybox; a cherry-
+  formula note; debug CLEAR PERKS button; GRANT extended with compounds.
+- `weapon_reload_started` now carries (duration, mag, mag_size).
+
+### Verified
+
+- Stamin-Up crafted at the bench from memory (no note); a wrong mix read
+  "unstable" with inventory byte-identical; the CORRECT Electric Cherry
+  mixture at the bench also read "unstable" with nothing consumed (tier
+  gate), then crafted at the built lab; the burner heat step converted
+  extract → concentrate ahead of it.
+- All four doses ingested: slots full, HUD chips wore the gold cap border,
+  and the multipliers measured exactly — walk 4.50 → 5.40 (×1.2), 18 → 24
+  rounds per 2-second burst (×1.33), spread multiplier 0.40 reported at the
+  read point.
+- Electric Cherry zap scaled precisely with emptiness: mag 6/30 reload dealt
+  exactly 76 (killed through 60 HP, stun registered), mag 19/30 dealt exactly
+  45.7 (survivor at 14.3), and a full mag refused to reload — no zap.
+- Debug clear-perks emptied the slots (multipliers back to 1.00, walk back
+  to 4.50) and a re-crafted dose applied again; death → restart wiped perks,
+  reveals, compounds and doses to a clean bag.
+
 ## [0.5.1] — 2026-07-10
 
 ### Added

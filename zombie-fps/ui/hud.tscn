@@ -103,15 +103,9 @@ theme_override_font_sizes/font_size = 34
 text = "100"
 
 [node name="PerkArea" type="PanelContainer" parent="Root/BottomLeft"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 56)
 theme_override_styles/panel = SubResource("perk_box")
-
-[node name="PerkHint" type="Label" parent="Root/BottomLeft/PerkArea"]
-theme_override_colors/font_color = Color(1, 1, 1, 0.2)
-theme_override_font_sizes/font_size = 12
-text = "PERK SLOTS — v0.6.0"
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="BottomRight" type="VBoxContainer" parent="Root"]
 anchor_left = 1.0

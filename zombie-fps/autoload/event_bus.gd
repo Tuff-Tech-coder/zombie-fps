@@ -13,7 +13,7 @@ signal player_died()
 signal weapon_equipped(data: WeaponData)
 signal weapon_fired(weapon: Weapon)
 signal ammo_changed(mag: int, reserve: int)
-signal weapon_reload_started(duration: float)
+signal weapon_reload_started(duration: float, mag: int, mag_size: int)
 signal weapon_reload_finished()
 
 # -- enemies (live since v0.3.0) --
@@ -28,10 +28,13 @@ signal inventory_changed(id: StringName, count: int)
 signal resource_picked_up(item)
 signal interact_prompt_changed(text: String)
 
+# -- perks (live since v0.6.0) --
+signal perk_crafted(perk)
+signal perks_changed()
+
 # -- debug (emitted by DebugManager only; RoundManager consumes) --
 signal debug_wave_start_requested()
 signal debug_wave_end_requested()
 
 # -- declared ahead of their milestones so downstream briefs slot in --
-signal perk_crafted(perk)                      # v0.6.0
 signal map_cleared()                           # v0.9.0 boss hand-off

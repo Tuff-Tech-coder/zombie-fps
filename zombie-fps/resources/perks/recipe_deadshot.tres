@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PerkRecipe" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://autoload/perk_recipe.gd" id="1_pr"]
+[ext_resource type="Resource" path="res://resources/perks/deadshot.tres" id="2_pk"]
+
+[resource]
+script = ExtResource("1_pr")
+display_name = "Deadshot Daiquiri"
+inputs = Array[Dictionary]([{
+"id": &"retinol",
+"qty": 2
+}, {
+"id": &"ethanol",
+"qty": 1
+}])
+output_perk = ExtResource("2_pk")
+required_tier = 0

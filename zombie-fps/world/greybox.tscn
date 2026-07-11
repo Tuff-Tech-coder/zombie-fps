@@ -19,6 +19,19 @@
 [ext_resource type="Resource" path="res://resources/recipes/electric_trap.tres" id="17_etr"]
 [ext_resource type="Resource" path="res://resources/items/coil.tres" id="18_coil"]
 [ext_resource type="Resource" path="res://resources/items/ammo_762.tres" id="19_762"]
+[ext_resource type="PackedScene" path="res://world/crafting_bench.tscn" id="20_bench"]
+[ext_resource type="PackedScene" path="res://ui/crafting_ui.tscn" id="21_cui"]
+[ext_resource type="PackedScene" path="res://world/recipe_note.tscn" id="22_note"]
+[ext_resource type="Resource" path="res://resources/recipes/lab.tres" id="23_lab"]
+[ext_resource type="Resource" path="res://resources/recipes/burner.tres" id="24_brn"]
+[ext_resource type="Resource" path="res://resources/perks/recipe_electric_cherry.tres" id="25_ecr"]
+[ext_resource type="Resource" path="res://resources/items/caffeine.tres" id="26_caf"]
+[ext_resource type="Resource" path="res://resources/items/taurine.tres" id="27_tau"]
+[ext_resource type="Resource" path="res://resources/items/cordite.tres" id="28_cor"]
+[ext_resource type="Resource" path="res://resources/items/retinol.tres" id="29_ret"]
+[ext_resource type="Resource" path="res://resources/items/ethanol.tres" id="30_eth"]
+[ext_resource type="Resource" path="res://resources/items/cherry_extract.tres" id="31_che"]
+[ext_resource type="Resource" path="res://resources/items/electrolytes.tres" id="32_ele"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -549,3 +562,55 @@ quantity = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0.35, 2.2)
 item = ExtResource("19_762")
 quantity = 150
+
+[node name="CraftingBench" parent="Scavenge" instance=ExtResource("20_bench")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 3.8)
+
+[node name="LabSpot" parent="Scavenge" instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, -2)
+recipe = ExtResource("23_lab")
+
+[node name="BurnerSpot" parent="Scavenge" instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 4.3)
+recipe = ExtResource("24_brn")
+
+[node name="CherryNote" parent="Scavenge" instance=ExtResource("22_note")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.3, 4)
+recipe = ExtResource("25_ecr")
+
+[node name="PickupCaffeine" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.35, -3.5)
+item = ExtResource("26_caf")
+quantity = 3
+
+[node name="PickupTaurine" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.35, -4.3)
+item = ExtResource("27_tau")
+quantity = 1
+
+[node name="PickupCordite" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.35, 3.5)
+item = ExtResource("28_cor")
+quantity = 1
+
+[node name="PickupRetinol" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.35, -1)
+item = ExtResource("29_ret")
+quantity = 2
+
+[node name="PickupEthanol" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0.35, -1)
+item = ExtResource("30_eth")
+quantity = 1
+
+[node name="PickupCherryExtract" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0.35, -4.2)
+item = ExtResource("31_che")
+quantity = 2
+
+[node name="PickupElectrolytes" parent="Scavenge" instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.35, 0.5)
+item = ExtResource("32_ele")
+quantity = 1
+
+[node name="CraftingUI" parent="." instance=ExtResource("21_cui")]

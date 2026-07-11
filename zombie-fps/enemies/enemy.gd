@@ -35,6 +35,7 @@ var state := State.DEAD
 var active := false
 
 var _player: Player
+var _stun_time := 0.0
 var _state_time := 0.0
 var _attack_did_hit := false
 var _playback: AnimationNodeStateMachinePlayback
@@ -64,6 +65,7 @@ func reset() -> void:
 	health = max_health
 	state = State.SPAWNING
 	active = true
+	_stun_time = 0.0
 	_state_time = 0.0
 	velocity = Vector3.ZERO
 	collision_layer = LAYER_ENEMY
@@ -84,6 +86,13 @@ func deactivate() -> void:
 	collision_mask = 0
 	visible = false
 	process_mode = PROCESS_MODE_DISABLED
+
+
+## Brief full-body stun (electric shocks): movement and attacks freeze,
+## the state machine resumes where it left off.
+func stun(duration: float) -> void:
+	if state != State.DEAD:
+		_stun_time = maxf(_stun_time, duration)
 
 
 func take_damage(amount: float, is_weakpoint := false) -> void:
@@ -127,6 +136,14 @@ func set_animation_enabled(on: bool) -> void:
 
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
+		return
+	if _stun_time > 0.0:
+		_stun_time -= delta
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+		move_and_slide()
 		return
 	_state_time += delta
 	if not is_on_floor():

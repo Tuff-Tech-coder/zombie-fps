@@ -197,6 +197,45 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
   spawn/path stress tests; its door is walkable in the navmesh on purpose (closed
   = physical block only).
 
+## Perks & crafting (v0.6.0)
+
+- **`Perk`** (`autoload/perk.gd`, .tres under `resources/perks/`): id, name,
+  delivery (INGESTIBLE/ATTACHABLE; MACHINE reserved), trigger (PASSIVE /
+  ON_RELOAD / ON_HIT / ON_KILL / ON_DEATH), tier (BENCH/LAB), plus the effect.
+  Perks are doses — syringes, bottles, food — never machinery.
+  Two effect shapes:
+  · **Stat perks are pure data**: `stat` + `multiplier`. Gameplay multiplies
+    its base by `PerkManager.get_multiplier(&"stat")` at the point of use —
+    the read points are player `_current_speed` (move_speed), weapon fire
+    cooldown (fire_rate) and hitscan spread (spread). One read per stat,
+    mirroring the DebugManager one-check rule. A new stat perk is a .tres.
+  · **Scripted perks** name an `effect_script` (a Node) + `params` dict;
+    PerkManager attaches it while active (Electric Cherry hooks
+    `weapon_reload_started`, which now carries mag/mag_size for emptiness
+    scaling). Detach = node freed on remove.
+- **`PerkManager`** (autoload): `MAX_PERKS = 4`; apply (refuses full or
+  duplicate — the caller consumes the dose only on success), remove (perks
+  are swappable), clear_all, get_multiplier, `perks_changed` on any change.
+  Doses live in the Inventory under the perk's id; their ItemResources are
+  synthesized at boot.
+- **`CraftingSystem`** (autoload — DESIGN_DOC §8.1's formula resolver):
+  PerkRecipe registry, `match_recipe(mix, tier)` (exact multiset, recipes of
+  required_tier ≤ the station's tier), `craft` (consume → dose → 
+  `perk_crafted`), and run-scoped `revealed` recipe ids from notes.
+- **Stations**: `CraftingStation` (tier BENCH/LAB) opens the combine UI on E.
+  The bench is pre-placed scenery; the lab is a buildable (BuildRecipe) and
+  its formulas may need **heated** compounds — the `Burner` buildable converts
+  input→output compound (e.g. cherry extract → concentrate). Lab recipes
+  refuse to match at a bench, indistinguishably from a wrong guess.
+- **Combine-and-validate, no browser**: the UI shows compounds, you build a
+  mix, Combine either crafts or reads "unstable" (nothing consumed —
+  the failed mix stays for adjustment). Veterans craft from memory;
+  a `RecipeNote` pickup reveals one formula in the UI **for the run only**
+  (never a persistent unlock — §11). HUD perk chips fill per active perk and
+  all gain the gold border at the cap (§4.2).
+- Enemies now have `stun(duration)` — a brief full-body freeze used by
+  electric effects; the AI resumes where it left off.
+
 ## Navigation
 
 - The greybox navmesh is **baked at runtime** (`world/nav_region.gd`) because the

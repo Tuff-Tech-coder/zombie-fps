@@ -77,12 +77,30 @@ func spawn_zombies(count: int) -> void:
 func grant_supplies() -> void:
 	if not is_enabled():
 		return
-	Inventory.add(&"scrap", 12)
+	Inventory.add(&"scrap", 16)
 	Inventory.add(&"servo", 2)
-	Inventory.add(&"coil", 4)
+	Inventory.add(&"coil", 6)
 	Inventory.add(&"9mm", 120)
 	Inventory.add(&"762", 300)
-	print("[debug] granted supplies — scrap 12, servo 2, coil 4, 9mm 120, 762 300")
+	# Compounds for every current formula (Cherry Extract left raw on purpose —
+	# the burner heat step stays exercised).
+	Inventory.add(&"caffeine", 4)
+	Inventory.add(&"taurine", 2)
+	Inventory.add(&"cordite", 2)
+	Inventory.add(&"retinol", 3)
+	Inventory.add(&"ethanol", 2)
+	Inventory.add(&"cherry_extract", 3)
+	Inventory.add(&"electrolytes", 2)
+	print("[debug] granted supplies — parts, ammo, and compounds")
+
+
+## Empties every perk slot — the perk-reset stand-in until something real
+## (a map hazard, a perk-stripping enemy) takes the job.
+func clear_perks() -> void:
+	if not is_enabled():
+		return
+	PerkManager.clear_all()
+	print("[debug] cleared all perks")
 
 
 ## Returns the new open state (button lamp).

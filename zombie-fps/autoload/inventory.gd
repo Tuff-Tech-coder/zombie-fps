@@ -36,6 +36,11 @@ func count(id: StringName) -> int:
 	return int(_bag.get(id, 0))
 
 
+## Every id currently in the bag (for UI iteration).
+func all_ids() -> Array:
+	return _bag.keys()
+
+
 ## inputs: Array of { "id": StringName, "qty": int } (BuildRecipe format).
 func has(inputs: Array) -> bool:
 	for input in inputs:

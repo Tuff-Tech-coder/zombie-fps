@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://autoload/item_resource.gd" id="1_it"]
+
+[resource]
+script = ExtResource("1_it")
+id = &"cherry_extract"
+display_name = "Cherry Extract"
+category = 0

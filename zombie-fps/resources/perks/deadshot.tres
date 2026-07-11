@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Perk" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://autoload/perk.gd" id="1_pk"]
+
+[resource]
+script = ExtResource("1_pk")
+id = &"deadshot"
+display_name = "Deadshot Daiquiri"
+color = Color(0.4, 0.6, 0.95, 1)
+delivery = 0
+trigger = 0
+tier = 0
+stat = &"spread"
+multiplier = 0.4

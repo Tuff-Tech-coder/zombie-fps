@@ -50,7 +50,7 @@ func try_fire() -> void:
 		return
 	if not DebugManager.infinite_ammo:  # the one debug check (CODE_GUIDE rules)
 		mag -= 1
-	_cooldown = 1.0 / data.fire_rate
+	_cooldown = 1.0 / (data.fire_rate * PerkManager.get_multiplier(&"fire_rate"))
 	_do_fire()
 	fired.emit()
 	EventBus.weapon_fired.emit(self)
@@ -63,7 +63,8 @@ func start_reload() -> void:
 	reloading = true
 	if _reload_audio:
 		_reload_audio.play()
-	EventBus.weapon_reload_started.emit(data.reload_time)
+	# mag/mag_size ride along so ON_RELOAD perks can scale with emptiness.
+	EventBus.weapon_reload_started.emit(data.reload_time, mag, data.mag_size)
 	await get_tree().create_timer(data.reload_time).timeout
 	if not is_inside_tree():
 		return

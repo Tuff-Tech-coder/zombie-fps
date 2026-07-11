@@ -63,9 +63,11 @@ var _mount = null  # ManualTurret while mounted (duck-typed)
 func _ready() -> void:
 	health = max_health
 	_hop_accel = air_accelerate
-	# Fresh run: the Inventory autoload survives scene reloads, so the run
-	# owner resets and reseeds it here — mirrors EnemyPool.release_all().
+	# Fresh run: these autoloads survive scene reloads, so the run owner
+	# resets them here — mirrors EnemyPool.release_all().
 	Inventory.reset()
+	PerkManager.reset_run()
+	CraftingSystem.reset_run()
 	if weapon.data.ammo_type != &"":
 		Inventory.add(weapon.data.ammo_type, weapon.data.reserve_ammo)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -133,6 +135,14 @@ func _process(_delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if _mount != null:
 		return  # parked at the mount; no movement, no interact ray
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		# A UI owns the mouse (crafting screen / Esc-freed): hold position.
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+		move_and_slide()
+		return
 	_update_crouch(delta)
 	_update_jump_buffer(delta)
 	_update_interact_focus()
@@ -224,11 +234,12 @@ func _cap_horizontal_speed() -> void:
 
 
 func _current_speed() -> float:
+	var perk_mult := PerkManager.get_multiplier(&"move_speed")
 	if _crouching:
-		return walk_speed * crouch_multiplier
+		return walk_speed * crouch_multiplier * perk_mult
 	if Input.is_action_pressed("sprint") and is_on_floor():
-		return walk_speed * sprint_multiplier
-	return walk_speed
+		return walk_speed * sprint_multiplier * perk_mult
+	return walk_speed * perk_mult
 
 
 func _update_crouch(delta: float) -> void:

@@ -54,7 +54,7 @@ func _fire_ray() -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
-	var spread := deg_to_rad(data.spread_degrees)
+	var spread := deg_to_rad(data.spread_degrees * PerkManager.get_multiplier(&"spread"))
 	var dir := -cam.global_basis.z
 	dir = dir.rotated(cam.global_basis.x, randf_range(-spread, spread))
 	dir = dir.rotated(cam.global_basis.y, randf_range(-spread, spread))
