@@ -156,12 +156,13 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
     after `death_duration`. Never `queue_free`.
   - `reset()` / `deactivate()` → the pooling contract: full restore to combat-ready /
     dormant (invisible, collision off, `PROCESS_MODE_DISABLED`).
-- **Scene contract** (see `zombie_walker.tscn`): `Model` (imported scene containing
-  an AnimationPlayer — resolved at runtime, never hardcode its internal path),
-  `AnimationTree` (state machine with states named `locomotion` / `attack` /
-  `death`; code drives it via `playback.start()`, no authored transitions),
-  `NavigationAgent3D`, `HeadShape`, `HealthLabel`. Looping anims are listed in the
-  exported `loop_animations` (imported GLB animations don't loop by default).
+- **Scene contract** (see `zombie_walker.tscn`): `Visual` (an `EnemyVisual` —
+  see Horde architecture below — owning the `Model`), `NavigationAgent3D`,
+  `HeadShape`, `HealthLabel`. The `Enemy` base speaks intent to `$Visual`
+  (`play_locomotion/attack/death`, `reset_visual`, `set_lod_level`) and **never
+  touches `anim_tree`/`_playback` directly** — that seam makes the final-model
+  swap a resource swap. The weak-point/head colliders stay on the physics body
+  (mesh-independent).
 - **AI state machine**: `SPAWNING → CHASING → ATTACKING → DEAD` enum in the base.
   Attack damage lands at `attack_hit_time` into the swing, only if the player is
   still in reach.
@@ -171,10 +172,39 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
 - **`EnemyPool`** (autoload): `acquire(pos)` / `release(enemy)`, hard cap
   `MAX_ENEMIES = 50` (DESIGN_DOC §3). Pooled nodes live under the autoload and
   survive scene reloads — restart paths must call `release_all()`.
-- **Animation LOD hook**: `set_animation_enabled(on)` exists for the v0.8.0 LOD
-  manager; don't add per-enemy animation costs that bypass it.
-- Collision layers: 1 = world, 2 = player, 3 = enemy. Weapon rays exclude the
-  wielder and hit everything else.
+- Collision layers: 1 = world, 2 = player, 3 = enemy, 4 = interactable. Weapon
+  rays exclude the wielder and hit everything else.
+
+## Horde architecture — the enemy visual seam (Phase 1)
+
+The zombie models are placeholders; the final rigs differ substantially, and
+skeletal animation is the dominant per-enemy cost. So the `Enemy` base is
+decoupled from its visual/rig behind **`EnemyVisual`** (`enemies/enemy_visual.gd`,
+the scene's `Visual` node), and swapping the whole rig is a resource-only change.
+
+- **Intent API** (all the base may call): `play_locomotion()`, `play_attack()`,
+  `play_death()`, `reset_visual()` (pool re-activation), `set_lod_level(level, hz)`.
+- **The AnimationTree is built in code**, not authored per-scene: `EnemyVisual`
+  constructs a 3-state machine (`locomotion`/`attack`/`death`) at runtime from
+  three exported `StringName` clip names, and resolves the `AnimationPlayer`
+  inside the `Model` at runtime (never hardcode its internal path). A new humanoid
+  is: point `Model` at the new GLB, set the three clip names — **zero `enemy.gd`
+  edits** (verified by swapping to a sibling KayKit rig).
+- **Adding an enemy type without blowing the budget**: reuse this seam (new scene,
+  new `Model` GLB + clip names, subclass `Enemy` only if behavior differs); fit
+  `MODEL_BUDGET.md`; keep to one material; it registers with the pool and managers
+  for free through the base. Do not re-author an AnimationTree in the scene.
+- **Two rig modes**, switched by whether `EnemyVisual.animation_library` is set:
+  - *Bundled* (current KayKit): clips live on the model's own AnimationPlayer,
+    referenced by bare name (`&"Walking_D_Skeletons"` etc.).
+  - *Retargeted* (final models): a shared retargeted `AnimationLibrary` is injected
+    at bind time and clips use the `"shared/Clip"` form. **Import checklist** for a
+    retargeted humanoid GLB: in the GLB's Import dock set
+    `import_as_skeleton_bones = true`, assign a **BoneMap** built against
+    `SkeletonProfileHumanoid`, reimport; author the shared library once (retarget a
+    clip set through the same profile) and assign it to `animation_library`. One
+    library then drives every humanoid rig. (Current placeholder uses bundled mode;
+    `Skeleton_Minion.glb.import` intentionally has `import_as_skeleton_bones=false`.)
 
 ## Debug system (v0.3.0)
 

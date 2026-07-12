@@ -5,8 +5,8 @@ extends CharacterBody3D
 ## and the pooling contract (reset()/deactivate() — pooled enemies are never
 ## freed during play, DESIGN_DOC §8.4).
 ##
-## Scene contract: Model (holds an AnimationPlayer somewhere inside),
-## AnimationTree (state machine with states "locomotion", "attack", "death"),
+## Scene contract: Visual (EnemyVisual — owns the Model and ALL animation;
+## this base speaks intent only and never touches animation machinery),
 ## NavigationAgent3D, HeadShape (weak-point CollisionShape3D), HealthLabel.
 
 enum State { SPAWNING, CHASING, ATTACKING, DEAD }
@@ -26,10 +26,6 @@ const MASK_WORLD_PLAYER_ENEMY := 7
 @export var spawn_delay := 0.4
 @export var death_duration := 2.6    ## death anim + corpse linger before pooling
 
-@export_group("Animation")
-## Imported GLB animations don't loop by default; these are forced to loop.
-@export var loop_animations: PackedStringArray = []
-
 var health := 0.0
 var state := State.DEAD
 var active := false
@@ -38,25 +34,15 @@ var _player: Player
 var _stun_time := 0.0
 var _state_time := 0.0
 var _attack_did_hit := false
-var _playback: AnimationNodeStateMachinePlayback
 
 @onready var agent: NavigationAgent3D = $NavigationAgent3D
-@onready var anim_tree: AnimationTree = $AnimationTree
-@onready var model: Node3D = $Model
+@onready var visual: EnemyVisual = $Visual
 @onready var head_shape: CollisionShape3D = $HeadShape
 @onready var health_label: Label3D = $HealthLabel
 
 
 func _ready() -> void:
-	# The AnimationPlayer lives inside the imported model scene, whose internal
-	# layout we don't control — resolve it at runtime instead of hardcoding.
-	var anim_player: AnimationPlayer = model.find_child("AnimationPlayer", true, false)
-	assert(anim_player != null, "Enemy model needs an AnimationPlayer")
-	for anim_name in loop_animations:
-		anim_player.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
-	anim_tree.anim_player = anim_tree.get_path_to(anim_player)
-	anim_tree.active = true
-	_playback = anim_tree.get("parameters/playback")
+	assert(visual != null, "Enemy scene needs a Visual (EnemyVisual) child")
 	DebugManager.flags_changed.connect(_update_health_label)
 
 
@@ -73,7 +59,7 @@ func reset() -> void:
 	visible = true
 	process_mode = PROCESS_MODE_INHERIT
 	_player = _find_player()
-	_playback.start(&"locomotion")
+	visual.reset_visual()
 	_update_health_label()
 	EnemyNavManager.register(self)
 
@@ -119,19 +105,13 @@ func die() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	EnemyNavManager.unregister(self)
-	_playback.start(&"death")
+	visual.play_death()
 	_update_health_label()
 	EventBus.enemy_died.emit(self)
 	await get_tree().create_timer(death_duration).timeout
 	# Guard: a reset() (re-acquired from pool) may have raced this timer.
 	if state == State.DEAD:
 		EnemyPool.release(self)
-
-
-## LOD hook (tuned in v0.8.0): lets a manager pause animation for distant
-## or off-screen enemies — the single biggest per-enemy cost (DESIGN_DOC §8.4).
-func set_animation_enabled(on: bool) -> void:
-	anim_tree.active = on
 
 
 func _physics_process(delta: float) -> void:
@@ -162,7 +142,7 @@ func _physics_process(delta: float) -> void:
 func _enter_chase() -> void:
 	state = State.CHASING
 	_state_time = 0.0
-	_playback.start(&"locomotion")
+	visual.play_locomotion()
 
 
 func _chase(delta: float) -> void:
@@ -192,7 +172,7 @@ func _start_attack() -> void:
 	_attack_did_hit = false
 	velocity.x = 0.0
 	velocity.z = 0.0
-	_playback.start(&"attack")
+	visual.play_attack()
 
 
 func _attack_update(delta: float) -> void:

@@ -1,7 +1,8 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://enemies/zombie_walker.gd" id="1_zw"]
-[ext_resource type="PackedScene" path="res://enemies/models/skeleton_minion/Skeleton_Minion.glb" id="2_model"]
+[ext_resource type="Script" path="res://enemies/enemy_visual.gd" id="2_ev"]
+[ext_resource type="PackedScene" path="res://enemies/models/skeleton_minion/Skeleton_Minion.glb" id="3_model"]
 
 [sub_resource type="CapsuleShape3D" id="body_capsule"]
 radius = 0.4
@@ -10,28 +11,10 @@ height = 1.7
 [sub_resource type="SphereShape3D" id="head_sphere"]
 radius = 0.3
 
-[sub_resource type="AnimationNodeAnimation" id="an_walk"]
-animation = &"Walking_D_Skeletons"
-
-[sub_resource type="AnimationNodeAnimation" id="an_attack"]
-animation = &"Unarmed_Melee_Attack_Punch_A"
-
-[sub_resource type="AnimationNodeAnimation" id="an_death"]
-animation = &"Death_A"
-
-[sub_resource type="AnimationNodeStateMachine" id="sm"]
-states/locomotion/node = SubResource("an_walk")
-states/locomotion/position = Vector2(350, 100)
-states/attack/node = SubResource("an_attack")
-states/attack/position = Vector2(550, 100)
-states/death/node = SubResource("an_death")
-states/death/position = Vector2(450, 250)
-
 [node name="ZombieWalker" type="CharacterBody3D"]
 collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_zw")
-loop_animations = PackedStringArray("Walking_D_Skeletons")
 
 [node name="BodyShape" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
@@ -41,11 +24,13 @@ shape = SubResource("body_capsule")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
 shape = SubResource("head_sphere")
 
-[node name="Model" parent="." instance=ExtResource("2_model")]
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("2_ev")
+locomotion_clip = &"Walking_D_Skeletons"
+attack_clip = &"Unarmed_Melee_Attack_Punch_A"
+death_clip = &"Death_A"
 
-[node name="AnimationTree" type="AnimationTree" parent="."]
-tree_root = SubResource("sm")
-active = false
+[node name="Model" parent="Visual" instance=ExtResource("3_model")]
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.6

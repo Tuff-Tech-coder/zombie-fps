@@ -5,6 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [Unreleased] — Horde Performance Architecture (foundational)
+
+> Cross-cutting architecture work (ARCH_PLAN.md), off the linear milestone
+> track. Version bump coordinated with the maintainer when the phases land.
+
+### Changed — Phase 1: enemy ↔ visual decoupling
+
+- Extracted **`EnemyVisual`** (`enemies/enemy_visual.gd`, the enemy scene's
+  `Visual` node): owns the `Model` + all animation. It builds the
+  `locomotion`/`attack`/`death` AnimationTree **in code** from three exported
+  clip names, resolves the `AnimationPlayer` at runtime, and exposes an intent
+  API (`play_locomotion/attack/death`, `reset_visual`, graded
+  `set_lod_level(level, hz)`). Retargeted-library mode (`SkeletonProfileHumanoid`)
+  is supported as a data switch for final models; import checklist in CODE_GUIDE.
+- `Enemy` base now contains **no** `anim_tree`/`_playback` access — it speaks
+  only intent to `$Visual`. Removed the bare `set_animation_enabled` hook
+  (superseded by `set_lod_level`) and the `loop_animations` export (the visual
+  loops locomotion itself). `zombie_walker.tscn` restructured: `Visual` node owns
+  the Model; the per-scene AnimationTree sub-resources are gone.
+
+### Verified
+
+- `zombie_walker` chases, attacks, dies, pools, and registers weak-point hits
+  identically through the seam (body 60→48, headshot 48→24 = exact 2×, second
+  headshot →0, returned to pool).
+- **Resource-only swap proven**: pointing `Model` at a different humanoid GLB
+  (`Skeleton_Warrior`) with the same three clip names spawned and behaved
+  correctly with zero `enemy.gd` edits.
+
 ## [0.6.0] — 2026-07-11
 
 ### Added
