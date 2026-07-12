@@ -34,6 +34,37 @@ for the milestone roadmap.
   (`Skeleton_Warrior`) with the same three clip names spawned and behaved
   correctly with zero `enemy.gd` edits.
 
+### Added — Phase 2: animation-LOD framework
+
+- **`AnimationLODManager`** (autoload) assigns each active enemy an LOD level
+  from distance-to-camera + frustum visibility and drives the `EnemyVisual`
+  seam: `FULL` (engine-ticked) → `REDUCED` (manual advance at a config Hz) →
+  `PAUSED` (frozen) → `CULLED` (opt-in hidden). Staggered evaluation
+  (`evaluations_per_tick`, round-robin) like the nav manager; sticky hysteresis
+  on band edges; `offscreen_demotion`; `level_counts()` for the Phase 4 overlay.
+  Enemies register in `reset()` / unregister in `deactivate()` (not `die()`, so
+  death anims stay LOD-managed until pooled).
+- **`LODConfig`** resource (`enemies/lod_config.gd` →
+  `resources/config/lod_config.tres`) holds every threshold — distance bands,
+  update rates, hysteresis, demotion, cull/background flags. **All defaults are
+  explicit placeholders** for Opus to profile against the final rigs.
+- Background-crowd tier (DESIGN_DOC §8.4) present as a **data-gated hook only**
+  (`background_tier_enabled` default false + an empty `_hand_off_to_background`
+  seam) — not implemented, not required.
+
+### Verified
+
+- SPAWN-10 in the debug room: the population's LOD tracks distance **and**
+  facing. Standing in a converged cluster, facing away → `REDUCED=10`; spinning
+  180° to face the same enemies → `FULL=10` — identical positions, camera
+  facing alone flipped the whole set. Spread test showed a mixed
+  FULL/REDUCED/PAUSED distribution by distance+visibility, with
+  `AnimationTree.active == (level == FULL)` confirming the skeletal cost is
+  actually dropped for throttled enemies (verified via `level_counts()`; the
+  visual overlay lands in Phase 4).
+- Hysteresis observed holding levels across the band-edge dead zone (no flicker).
+- Every threshold changed behavior from `lod_config.tres` with no code edit.
+
 ## [0.6.0] — 2026-07-11
 
 ### Added

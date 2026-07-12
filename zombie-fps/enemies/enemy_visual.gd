@@ -57,6 +57,7 @@ func _ready() -> void:
 	_add_state(machine, &"attack", attack_clip)
 	_add_state(machine, &"death", death_clip)
 	_anim_tree = AnimationTree.new()
+	_anim_tree.name = "AnimationTree"  # stable name for inspection/debug
 	add_child(_anim_tree)
 	_anim_tree.anim_player = _anim_tree.get_path_to(player)
 	_anim_tree.tree_root = machine

@@ -206,6 +206,49 @@ the scene's `Visual` node), and swapping the whole rig is a resource-only change
     library then drives every humanoid rig. (Current placeholder uses bundled mode;
     `Skeleton_Minion.glb.import` intentionally has `import_as_skeleton_bones=false`.)
 
+### Animation-LOD framework (Phase 2)
+
+Skeletal animation is the dominant per-enemy cost, so **`AnimationLODManager`**
+(autoload, `enemies/animation_lod_manager.gd`) throttles it by distance +
+on-screen visibility. Decisions live in the manager; *execution* lives in
+`EnemyVisual.set_lod_level(level, hz)`.
+
+- **Levels** (`EnemyVisual.LOD`): `FULL` (AnimationTree engine-ticked every
+  frame) → `REDUCED` (tree inactive; manually `advance()`d at `reduced_update_hz`)
+  → `PAUSED` (frozen pose) → `CULLED` (frozen + Model hidden, opt-in).
+- **Pattern = EnemyNavManager's**: enemies `register()` in `reset()` and
+  `unregister()` in `deactivate()` — **not** `die()`, so a corpse's death
+  animation stays LOD-managed until it actually pools. Only
+  `evaluations_per_tick` enemies are re-evaluated per physics tick, round-robin
+  (staggered, never the whole population in one frame).
+- **Decision**: distance-to-camera picks a base band; out-of-frustum demotes by
+  `offscreen_demotion` levels; **hysteresis** makes band edges sticky (an enemy
+  hovering on a boundary keeps its level until it crosses by the margin) so the
+  level never flip-flops. `level_counts()` feeds the Phase 4 perf overlay.
+- **Every threshold is in `LODConfig`** (`enemies/lod_config.gd` →
+  `resources/config/lod_config.tres`) — distance bands, update rates,
+  hysteresis, demotion, cull/background flags. **All defaults are placeholders**
+  (commented as such); the real numbers come from PROFILING_PLAYBOOK.md against
+  the final rigs. No LOD number ever lives in a method body.
+- **Background-crowd tier** (DESIGN_DOC §8.4) is a **hook only**:
+  `background_tier_enabled` (default false) + the empty
+  `_hand_off_to_background()` seam. Whether a MultiMesh tier is ever built is a
+  post-profiling decision; nothing implements or requires it.
+
+### Why each horde knob exists
+
+- `evaluations_per_tick` — trades LOD responsiveness against per-tick cost;
+  the stagger keeps the manager itself off the frame-time hot path at 50 agents.
+- distance bands (`full`/`reduced`/`paused_distance`) — the core cost curve:
+  animate what the player can actually see and judge; freeze what they can't.
+- `hysteresis` — kills level flicker at boundaries (visible popping otherwise).
+- `offscreen_demotion` — off-screen skeletal work is nearly pure waste, so it's
+  demoted hardest; separated from distance so the two can be tuned independently.
+- `reduced_update_hz` — the single biggest lever on mid-distance cost; low
+  enough to save frames, high enough that re-entering view doesn't visibly snap.
+- `cull_visuals` / `background_tier_enabled` — escalation seams held in reserve
+  for when profiling proves the frozen-pose tier isn't cheap enough.
+
 ## Debug system (v0.3.0)
 
 - **Everything debug lives in or routes through `DebugManager`** (autoload), gated

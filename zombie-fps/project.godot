@@ -18,7 +18,6 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 EventBus="*res://autoload/event_bus.gd"
 GameState="*res://autoload/game_state.gd"
 RoundManager="*res://autoload/round_manager.gd"
@@ -28,6 +27,8 @@ PerkManager="*res://autoload/perk_manager.gd"
 DebugManager="*res://autoload/debug_manager.gd"
 EnemyPool="*res://enemies/enemy_pool.gd"
 EnemyNavManager="*res://enemies/enemy_nav_manager.gd"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
+AnimationLODManager="*res://enemies/animation_lod_manager.gd"
 
 [display]
 

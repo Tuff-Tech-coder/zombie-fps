@@ -62,12 +62,16 @@ func reset() -> void:
 	visual.reset_visual()
 	_update_health_label()
 	EnemyNavManager.register(self)
+	# LOD registration lives here (not die()) so the death animation stays
+	# LOD-managed until deactivate() actually pools the body.
+	AnimationLODManager.register(self)
 
 
 ## Pool deactivation: dormant, invisible, no physics. Called by EnemyPool.
 func deactivate() -> void:
 	active = false
 	EnemyNavManager.unregister(self)
+	AnimationLODManager.unregister(self)
 	collision_layer = 0
 	collision_mask = 0
 	visible = false
