@@ -385,6 +385,22 @@ established manager precedent — no new EventBus signals
   `NavigationRegion3D` (the `Geometry` tree) are parsed — keep doors, targets,
   panels, and other dynamic objects *outside* that subtree so they don't carve
   the mesh.
+- **Dressed maps pre-bake** (v0.8.0): the city ships a saved
+  `NavigationMesh` resource (`world/city/city_navmesh.res`) baked once from
+  an invisible collision/nav **proxy** (`Geometry/Proxy`, a StaticBody3D of
+  plain box shapes for floors/walls/ramps/prop blockers) — no bake at load.
+  All visual dressing lives under a separate `Visuals` tree outside
+  `Geometry`. Rebaking after a proxy change: run the scene once with
+  `nav_region.gd` temporarily attached (or bake in-editor) and save the
+  resource back over the `.res`.
+- **Nav-critical dimensions** (measured, v0.8.0): with `agent_radius 0.45` /
+  `agent_height 2.0` and default 0.25 cells, doorways must be ≥ **1.8 m wide
+  and 2.4 m tall** or the voxelized bake disconnects them (2.1 m doors are a
+  rounding coin flip). Walkable ramps (stairs) must have their open sides
+  walled to full height — otherwise the bake connects the ramp to the floor
+  across its low side edge, a shortcut `CharacterBody3D` cannot climb, and
+  enemies wedge there. Fatten inside corners at ramp exits (e.g. a newel
+  post) so path corners keep clearance.
 
 ## Scenes
 
@@ -393,6 +409,11 @@ established manager precedent — no new EventBus signals
 - Levels instance entity scenes; they don't rebuild them from nodes.
 - Greybox geometry uses `CSGBox3D` with `use_collision = true` — fine for greybox,
   to be replaced in the art pass (v0.8.0), never in shipped dressed maps.
+- Dressed maps (v0.8.0, `world/city/city.tscn`) contain **no CSG**: collision
+  is the `Geometry/Proxy` StaticBody3D (also the nav bake source, see
+  Navigation), visuals are plain `MeshInstance3D` primitives + MultiMeshes
+  under `Visuals/`, with proxy and visual surfaces authored to coincide so
+  bullet impacts land on the visible faces.
 
 ## Placeholders
 

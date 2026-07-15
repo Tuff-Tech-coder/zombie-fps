@@ -34,6 +34,10 @@ func _physics_process(_delta: float) -> void:
 	if cam == null:
 		return
 	for i in mini(config.evaluations_per_tick, _enemies.size()):
+		# The set can empty mid-loop (a mass release racing this tick) —
+		# the entry guard alone leaves the modulo below dividing by zero.
+		if _enemies.is_empty():
+			break
 		_cursor %= _enemies.size()
 		_evaluate(_enemies[_cursor], cam)
 		_cursor += 1

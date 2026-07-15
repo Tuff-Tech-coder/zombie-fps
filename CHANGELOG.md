@@ -174,6 +174,101 @@ for the milestone roadmap.
   the existing debug_panel self-free (the overlay also self-frees
   independently).
 
+## [0.8.0] — 2026-07-15
+
+> First full map (DESIGN_DOC §12), built on the horde architecture above.
+> v0.7.0 (second weapon) intentionally skipped by the maintainer — the map
+> milestone was pulled forward.
+
+### Added
+
+- **First full map: WW2 British city, pre-bombing** (`world/city/city.tscn`) —
+  a slice of 1930s–40s London rendered in the KFMod idiom (fog, blackout,
+  emptiness; intact buildings, no bombsite dressing). Two street registers
+  joined by chokepoints: a Portland-stone **boulevard** (curved west facade,
+  ground-floor colonnade, domed corner building, tram rails) and a brick
+  **high street** with a back-alley loop (alley → courtyard → back lane →
+  colonnade passage) plus a dead-end yard. One **enterable tenement**
+  (shop + back room, stair hall with enclosed stairwell, upstairs flat)
+  routes horde traffic *through* the building via four doors and the stair.
+- **Dressed, CSG-free scene** per the CODE_GUIDE rule: an invisible
+  collision/nav **proxy** (`StaticBody3D` + 83 box shapes) under
+  `NavigationRegion3D/Geometry`; all visuals outside it — ~500 textured
+  `MeshInstance3D` primitives, window/paper MultiMeshes, primitive-built
+  period props (K6 telephone box, pillar box, cast-iron lamp standards,
+  two double-decker buses, burnt-out cars with fire glow, sandbag
+  barricades, handcart, washing line, boarded monument), fictional-brand
+  signage (shop fascias + hanging signs as `Label3D`, poster decals), and
+  KFMod interiors (dado rail + stained plaster/wallpaper two-band walls,
+  checkerboard tile, floorboards, furniture, ajar panel doors).
+- **Original texture set** (`world/city/textures/`, 20 PNGs) generated
+  in-engine by the kept-in-repo tool `_texture_bake.gd` (FastNoiseLite +
+  Image API; poster decals via SubViewport + serif system font) — zero
+  third-party assets, provenance in `CREDITS.md`. Includes blast-taped /
+  boarded / blacked-out window decals (192 instances in 3 MultiMeshes).
+- **Pre-baked navigation** (`world/city/city_navmesh.res`, 292 polys):
+  baked once from the proxy colliders and saved; the city does **no**
+  runtime bake at load (the greybox keeps `nav_region.gd`). Doorways are
+  1.8 m wide × 2.4 m high — the tested minimum for `agent_radius 0.45` /
+  `agent_height 2.0` voxelization; the tenement stair is a 24.6° ramp in
+  an enclosed stairwell (wall + newel post) so paths can't shortcut its
+  open side.
+- **Set-dressing crowd** (DESIGN_DOC §3/§8.4): one `MultiMeshInstance3D`
+  of still silhouettes (fogged plaza beyond the north barricade, a picket
+  line, rooftop fire-watchers on the parapets) + one of barrage balloons.
+  Exactly **2 draw calls** measured, zero per-frame AI, outside the nav
+  Geometry, unreachable and unshootable. The
+  `AnimationLODManager._hand_off_to_background()` seam stays dormant.
+- **Per-map data, no new systems**: `resources/rounds/city_rounds.tres`
+  (8 start / +5 / cap 30 / 25 s prep / 8 rounds) and
+  `resources/config/city_director.tres` (authored ramp `pressure_curve`,
+  burst 4–8, stickiness 0.8, preferred range 14–32 m); `world/city/city.gd`
+  assigns both to the autoload managers at load — the map's only script.
+- 15 `enemy_spawn_point` markers (streets, alleys, courtyard, lane, yard,
+  colonnade **and inside the tenement**: shop back room, upstairs bedroom,
+  landing) + 2 debug spawn markers; scavenge circuit of 26 pickups, the
+  pre-placed bench, lab/burner/turret/MG/trap build spots and the cherry
+  recipe note (bedroom); debug panel + perf overlay live in the map.
+
+### Changed
+
+- `application/run/main_scene` → `res://world/city/city.tscn` (the greybox
+  stays in-repo as the dev/free-fire scene); project version → 0.8.0.
+- City `WorldEnvironment` carries the greybox grade with fog retuned for
+  the larger volume (density 0.052, luminous grey-green fog light 1.05,
+  ambient 0.42, volumetric inject 0.32) — KFMod read: short sightlines,
+  warm pools vs cold dark, grain + vignette intact.
+
+### Fixed
+
+- `AnimationLODManager._physics_process` could divide modulo-zero when the
+  registered set emptied mid-loop (e.g. a mass `release_all` racing the
+  tick) — now breaks out safely.
+
+### Verified
+
+- Blockout playtested before dressing: WAVE starts rounds; a south-cluster
+  cohort walked 24 m up the boulevard and converged on the surround ring
+  (1.7–2.3 m); round 1 → PREP → round 2 (budget 5→7) → "map cleared after
+  2 rounds" with `EventBus.map_cleared` observed (runtime-shrunk config).
+- Interior funnel both ways: with the player in the flat, street spawns
+  entered the tenement and queued **up** the stairwell single file
+  (Y 0→1→2→3 samples) to melee range; a bedroom-marker spawn descended
+  and reached a player at the junction. Same routes re-verified on the
+  dressed proxy and again on the **pre-baked** mesh (street→flat path,
+  24 waypoints; no bake warning in the load log).
+- Scavenge circuit on the map: pickup E-interact (scrap 0→2), build spot
+  consumed exactly 4 scrap + 1 servo and instanced the auto turret, bench
+  and recipe-note prompts live.
+- Perf on the dressed map at the 50-agent cap, worst case (all on-screen,
+  LOD FULL 48/50): 152 FPS / 6.2 ms frame / 3.0 ms physics — 2.6×
+  headroom on the 16.67 ms budget; crowd toggled on/off moved draw calls
+  by exactly 2; perf overlay live in the city (PERF button).
+- Firewall (§11): hand-authored map, faked crowd (no AI/nav/pool/take_hit),
+  1 enemy type (placeholder KayKit rig stays — MODEL_BUDGET gate honored,
+  no final rig imported), no currency, boss seam left for v0.9.0,
+  single-player only.
+
 ## [0.6.0] — 2026-07-11
 
 ### Added
