@@ -91,6 +91,7 @@ func _flank_side(slot: int) -> float:
 	var period := maxi(1, roundi(1.0 / config.flank_fraction))
 	if slot % period != 0:
 		return 0.0
+	@warning_ignore("integer_division")  # flanker ordinal — truncation intended
 	return 1.0 if (slot / period) % 2 == 0 else -1.0
 
 

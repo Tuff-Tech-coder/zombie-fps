@@ -12,6 +12,7 @@ const DEBUG_ENABLED := true
 var infinite_ammo := false
 var infinite_health := false
 var show_enemy_health := false
+var show_perf_overlay := false
 
 var _wave_active := false  # lit state for the wave button
 var _spawn_cursor := 0
@@ -44,6 +45,10 @@ func toggle_flag(flag: StringName) -> bool:
 			show_enemy_health = not show_enemy_health
 			flags_changed.emit()
 			return show_enemy_health
+		&"show_perf_overlay":
+			show_perf_overlay = not show_perf_overlay
+			flags_changed.emit()
+			return show_perf_overlay
 	push_warning("Unknown debug flag: %s" % flag)
 	return false
 

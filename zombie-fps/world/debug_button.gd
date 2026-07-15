@@ -14,10 +14,11 @@ const LABELS := {
 	"wave": "WAVE",
 	"grant": "GRANT PARTS",
 	"clear_perks": "CLEAR PERKS",
+	"perf": "PERF",
 }
-const TOGGLES := ["infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave"]
+const TOGGLES := ["infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "perf"]
 
-@export_enum("spawn_1", "spawn_10", "infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "grant", "clear_perks")
+@export_enum("spawn_1", "spawn_10", "infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "grant", "clear_perks", "perf")
 var action := "spawn_1"
 
 var _mat: StandardMaterial3D
@@ -47,6 +48,8 @@ func take_hit(_damage: float, _hit_pos: Vector3, _normal: Vector3, _shape_index:
 			_lit = DebugManager.toggle_flag(StringName(action))
 		"enemy_health_bars":
 			_lit = DebugManager.toggle_flag(&"show_enemy_health")
+		"perf":
+			_lit = DebugManager.toggle_flag(&"show_perf_overlay")
 		"door":
 			_lit = DebugManager.toggle_door()
 		"wave":

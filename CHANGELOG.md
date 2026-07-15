@@ -137,6 +137,43 @@ for the milestone roadmap.
   physics ~2.1 ms while spread out, **17.4 ms converged into a jam vs
   3.75 ms with avoidance off** — the measured basis for shipping RVO off.
 
+### Added — Phase 4: perf overlay, budgets, playbook, docs
+
+- **Perf overlay** (`ui/perf_overlay.gd/.tscn`): CanvasLayer of read-only
+  taps — FPS / frame ms / physics ms / draw calls (Performance monitors),
+  active enemies (`EnemyPool.active_count()`), and the LOD level
+  distribution (`AnimationLODManager.level_counts()`). Hidden by default,
+  toggled by a new shootable **PERF** button through
+  `DebugManager.show_perf_overlay`. It lives inside `debug_panel.tscn`
+  (row respaced to ten buttons), so the whole fixture strips with the
+  debug flag; no gameplay script references it.
+- **`MODEL_BUDGET.md`** (repo root): first-principles per-enemy asset
+  ceiling for the v0.8.0 art pass at 50 agents / 60 FPS on the target box —
+  bones ≤40 (hard ~55), ~2–4k tris near, 1 material / 1 draw call, 3
+  compressed clips, horde totals — every row marked "profile to confirm",
+  plus the shared-retargeted-library note that keeps clip memory constant
+  across the ≤4-type firewall.
+- **`PROFILING_PLAYBOOK.md`** (repo root): the ordered measurement pass
+  (baseline → spawn ramp at forced FULL → LOD band sweep → RVO go/no-go →
+  director pressure) with the monitor to read and the `.tres` knob each
+  step tunes, a recording template, and today's first RVO data point
+  already logged.
+- **CODE_GUIDE**: horde section extended with the Phase 3 division of
+  responsibility (RoundManager lifecycle / SpawnDirector questions /
+  EnemyNavManager targets), "why each knob exists" entries for the
+  director knobs, and the Phase 4 profiling/budget cross-links.
+
+### Verified
+
+- PERF button lights green and shows the overlay, second hit hides both;
+  hidden by default on boot. With 10 spawned the readout tracked
+  `enemies 10`, and a 180° camera turn alone flipped the LOD line
+  REDUCED 3 / PAUSED 7 → PAUSED 10 (identical positions — facing drove
+  the distribution). Draw calls fell 610 → 58 turning from the room to a
+  wall: the taps are live. Overlay + button strip with the debug flag via
+  the existing debug_panel self-free (the overlay also self-frees
+  independently).
+
 ## [0.6.0] — 2026-07-11
 
 ### Added

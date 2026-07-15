@@ -235,6 +235,44 @@ on-screen visibility. Decisions live in the manager; *execution* lives in
   `_hand_off_to_background()` seam. Whether a MultiMesh tier is ever built is a
   post-profiling decision; nothing implements or requires it.
 
+### Spawn/AI director & group behavior (Phase 3)
+
+Round pacing and enemy placement are split across three owners — keep the
+division exactly:
+
+- **`RoundManager`** owns the round **lifecycle**: budget, spawn timer,
+  death top-up, the round-clear gate, and `GameState` phase/round writes.
+  Its spawn timer is one-shot and re-armed after every spawn attempt, so
+  the interval below is re-read spawn-by-spawn. It exposes
+  `round_progress()` / `live_count()` as the read API.
+- **`SpawnDirector`** (autoload) **answers questions and never spawns**:
+  `next_spawn_position()` (scores `enemy_spawn_point` markers — frustum
+  and min-distance rejection, behind-the-player and preferred-range
+  scoring, cohort-burst marker stickiness, and a never-stall fallback to
+  the least-visible marker), `current_spawn_interval()` and
+  `current_concurrency_ceiling()` (both mapped from an authored pressure
+  `Curve` sampled at `RoundManager.round_progress()`; the ceiling scales
+  *within* `RoundConfig.max_concurrent` and is hard-clamped to the pool's
+  50). It keeps no parallel counters.
+- **`EnemyNavManager`** owns **targets + group math** and stays the ONLY
+  writer of `agent.target_position`: stable per-enemy slot indices drive a
+  surround ring near the player (per-slot angles at melee reach — the
+  anti-stack) and lateral flank offsets for a configured fraction of slots.
+  It also applies the RVO params to agents at registration —
+  `avoidance_enabled` ships **false** (measured ~17 ms physics at a
+  50-agent jam vs ~3.75 ms off; PROFILING_PLAYBOOK #4 is the gate), and
+  `agent.max_speed` is capped at the enemy's `move_speed` so RVO can never
+  fling packed bodies. When avoidance is off the enemy movement step is
+  the plain direct path; when on, chase velocity routes through
+  `agent.set_velocity()` → `velocity_computed`.
+
+Every knob for all of the above lives in **`DirectorConfig`**
+(`autoload/director_config.gd` → `resources/config/greybox_director.tres`,
+all placeholder defaults). A new map's pacing/placement feel is a new
+director `.tres`, not code. Registration/queries are direct calls per the
+established manager precedent — no new EventBus signals
+(`director_pressure_changed` stays unproposed until something listens).
+
 ### Why each horde knob exists
 
 - `evaluations_per_tick` — trades LOD responsiveness against per-tick cost;
@@ -248,6 +286,37 @@ on-screen visibility. Decisions live in the manager; *execution* lives in
   enough to save frames, high enough that re-entering view doesn't visibly snap.
 - `cull_visuals` / `background_tier_enabled` — escalation seams held in reserve
   for when profiling proves the frozen-pose tier isn't cheap enough.
+- `min_spawn_distance` / frustum rejection — spawns the player can watch pop
+  in break the dread pillar; the never-stall fallback exists because a round
+  that can't place is worse than one visible spawn.
+- `pressure_curve` + `interval_relaxed/peak` + `concurrent_floor_fraction` —
+  the whole difficulty ramp as one authored curve; flat 0.5 = the exact
+  pre-director pacing, so feel changes are always a data diff.
+- `burst_size_range` / `burst_marker_stickiness` — cohorts arriving together
+  is what makes funneling emerge from placement alone (no nav code).
+- `ring_radius` / `ring_spacing_degrees` / `ring_target_radius` — fan-out at
+  melee range instead of a one-pixel stack; the target radius must stay
+  inside `Enemy.attack_range` or arrivals hold formation without swinging.
+- `flank_fraction` / `flank_distance` — a few approach vectors off the
+  straight line read as intent without any real squad AI.
+- `avoidance_*` — RVO separation, gated because its cost at a converged
+  50-agent jam is measured in whole milliseconds (see PROFILING_PLAYBOOK #4).
+
+### Profiling & budgets (Phase 4)
+
+- The **perf overlay** (`ui/perf_overlay.gd/.tscn`) is a read-only debug
+  fixture: Performance monitors + `EnemyPool.active_count()` +
+  `AnimationLODManager.level_counts()`. It lives inside `debug_panel.tscn`,
+  is toggled by the shootable **PERF** button through
+  `DebugManager.show_perf_overlay`, and strips with the debug flag like the
+  rest of the panel. No gameplay script references it.
+- **`MODEL_BUDGET.md`** (repo root) is the per-enemy asset ceiling (bones,
+  tris, materials, clips) for the v0.8.0 art pass — check candidates against
+  it *before* import work; fix the asset, never widen the budget.
+- **`PROFILING_PLAYBOOK.md`** (repo root) is the ordered measurement pass
+  that turns every placeholder in `lod_config.tres` and
+  `greybox_director.tres` into a measured number. Re-run it after any rig
+  swap or horde-system change.
 
 ## Debug system (v0.3.0)
 
