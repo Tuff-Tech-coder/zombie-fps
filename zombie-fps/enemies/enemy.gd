@@ -44,6 +44,9 @@ var _attack_did_hit := false
 func _ready() -> void:
 	assert(visual != null, "Enemy scene needs a Visual (EnemyVisual) child")
 	DebugManager.flags_changed.connect(_update_health_label)
+	# RVO reply path — only ever fires when EnemyNavManager enabled avoidance
+	# on this agent (DirectorConfig.avoidance_enabled, shipped off).
+	agent.velocity_computed.connect(_on_velocity_computed)
 
 
 ## Pool activation: restore to a fresh combat-ready state.
@@ -54,6 +57,9 @@ func reset() -> void:
 	_stun_time = 0.0
 	_state_time = 0.0
 	velocity = Vector3.ZERO
+	# Clear any RVO desired velocity left over from this body's previous life,
+	# or the first avoidance reply after re-acquire would move on stale data.
+	agent.velocity = Vector3.ZERO
 	collision_layer = LAYER_ENEMY
 	collision_mask = MASK_WORLD_PLAYER_ENEMY
 	visible = true
@@ -140,6 +146,10 @@ func _physics_process(delta: float) -> void:
 			_chase(delta)
 		State.ATTACKING:
 			_attack_update(delta)
+	if agent.avoidance_enabled and state == State.CHASING:
+		# The chase move lands in _on_velocity_computed once RVO replies;
+		# every other state (and avoidance off) keeps the direct path.
+		return
 	move_and_slide()
 
 
@@ -163,9 +173,16 @@ func _chase(delta: float) -> void:
 	to_next.y = 0.0
 	if to_next.length_squared() > 0.0001:
 		var dir := to_next.normalized()
-		velocity.x = dir.x * move_speed
-		velocity.z = dir.z * move_speed
+		if agent.avoidance_enabled:
+			# Desired velocity goes through RVO; the safe result arrives in
+			# _on_velocity_computed, which performs this frame's move.
+			agent.set_velocity(Vector3(dir.x, 0.0, dir.z) * move_speed)
+		else:
+			velocity.x = dir.x * move_speed
+			velocity.z = dir.z * move_speed
 		_face(dir, delta)
+	elif agent.avoidance_enabled:
+		agent.set_velocity(Vector3.ZERO)
 	if global_position.distance_to(_player.global_position) <= attack_range:
 		_start_attack()
 
@@ -197,6 +214,18 @@ func _attack_update(delta: float) -> void:
 			_start_attack()
 		else:
 			_enter_chase()
+
+
+## RVO-safe velocity (only emitted while avoidance is enabled). Avoidance
+## replaces the horizontal chase velocity and nothing else: a same-frame
+## transition out of CHASING (attack start, stun, death) already moved
+## directly, so a stale reply is dropped instead of double-stepping.
+func _on_velocity_computed(safe_velocity: Vector3) -> void:
+	if state != State.CHASING or _stun_time > 0.0:
+		return
+	velocity.x = safe_velocity.x
+	velocity.z = safe_velocity.z
+	move_and_slide()
 
 
 func _face(dir: Vector3, delta: float) -> void:

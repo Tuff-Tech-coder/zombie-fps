@@ -65,6 +65,78 @@ for the milestone roadmap.
 - Hysteresis observed holding levels across the band-edge dead zone (no flicker).
 - Every threshold changed behavior from `lod_config.tres` with no code edit.
 
+### Added — Phase 3: spawn director + group behavior
+
+- **`SpawnDirector`** (autoload) answers RoundManager's three questions —
+  `next_spawn_position()`, `current_spawn_interval()`,
+  `current_concurrency_ceiling()` — and never spawns or counts budget itself.
+  Placement scores the existing `enemy_spawn_point` markers: in-frustum and
+  too-near markers are rejected, survivors scored by behind-the-player
+  view-dot + preferred distance band, and cohort **bursts** stick to one
+  marker cluster (`burst_marker_stickiness`) so waves funnel through a
+  chokepoint together. Graceful fallback: if every marker is rejected the
+  least-visible/farthest one is used anyway (one warning) — a round can
+  never stall on placement. Pacing maps an exported pressure `Curve`
+  (input: `RoundManager.round_progress()`) onto spawn interval and a
+  concurrency ceiling that scales *within* `RoundConfig.max_concurrent`,
+  hard-clamped to the pool's 50.
+- **`DirectorConfig`** resource (`autoload/director_config.gd` →
+  `resources/config/greybox_director.tres`) holds every director and
+  group-behavior knob — **all defaults are explicit placeholders** for the
+  PROFILING_PLAYBOOK pass. The shipped flat-0.5 curve reproduces the old
+  fixed pacing exactly (interval 0.8 s). Two deliberate deltas from
+  ARCH_PLAN §4, both documented in the schema: `avoidance_enabled` ships
+  **false** (RVO cost at 50 agents measured well over budget, see Verified),
+  and `ring_target_radius` was added because the surround ring needs a
+  target radius distinct from its trigger radius or arrivals would hold
+  formation outside melee reach.
+- **Group behavior in `EnemyNavManager`** — still the only writer of
+  `agent.target_position`: each registered enemy gets a stable recycled
+  **slot** index; within `ring_radius` of the player the slot maps to a
+  fixed ring angle (`ring_spacing_degrees`) at melee reach — approachers fan
+  out and surround instead of stacking; outside the ring, every
+  1/`flank_fraction`-th slot approaches with a lateral `flank_distance`
+  offset, alternating sides; everyone else aims true, as before.
+- **Config-gated RVO separation**: at registration the nav manager applies
+  `avoidance_enabled`/`radius`/`max_neighbors` to the agent, plus
+  `max_speed = move_speed` (RVO resolves crowd overlap at up to `max_speed`,
+  default 10 — packed zombies got flung at ~4.5× walk speed until capped).
+  When enabled, the enemy's chase velocity routes through
+  `agent.set_velocity()` → `velocity_computed` (stale replies after a
+  same-frame state change are dropped); when disabled — the shipped default
+  — the movement step is the pre-existing direct path, unchanged.
+
+### Changed
+
+- `RoundManager`'s spawn timer is now **one-shot and re-armed** at the end
+  of every `_try_spawn()` (including topped-out/deferred attempts, matching
+  the old repeating-timer retry cadence): the interval is re-read from the
+  director on each arm, so the pressure curve shifts pacing spawn-by-spawn.
+  The concurrency check reads the director's ceiling; placement is fully
+  delegated (spawn jitter moved into `DirectorConfig.spawn_jitter`); new
+  read API `round_progress()` / `live_count()`. Budget growth, death
+  top-up, and the round-clear gate are untouched.
+
+### Verified
+
+- Round 1 spawned exactly its budget (6/6) and cleared to PREP on the last
+  kill with corpses still animating (v0.4.x gate intact). All six spawns
+  arrived ≥30 m out as one cohort on a single marker cluster; round 2 sent
+  9-of-10 through the corridor cluster + 1 from room B.
+- With every marker inside the camera frustum, spawning continued from the
+  least-visible/farthest marker with exactly one warning — no stall.
+- Pressure is pure data: swapping in a ramped Curve at runtime moved the
+  interval 1.2 → 0.4 s and the ceiling 12 → 24 across round progress with
+  zero code edits; restoring the flat curve returned 0.8 s / 18.
+- Ring: nine converged enemies each held their exact slot angle
+  (24°·slot at radius 1.2) around the cornered player; far enemies aimed
+  true. Flank: slots 0/4 offset ±4 m laterally on opposite wings, slot 1
+  aimed true; repeated reads byte-identical (no jitter).
+- RVO at the 50-agent cap: no NaNs/explosions, speeds capped at exactly
+  2.2 m/s after the max_speed fix. Frame cost recorded for the playbook:
+  physics ~2.1 ms while spread out, **17.4 ms converged into a jam vs
+  3.75 ms with avoidance off** — the measured basis for shipping RVO off.
+
 ## [0.6.0] — 2026-07-11
 
 ### Added

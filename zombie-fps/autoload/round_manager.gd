@@ -1,10 +1,16 @@
 extends Node
 ## Round lifecycle (DESIGN_DOC §3, §8.1): sole writer of GameState.round_number
 ## and GameState.phase. During ROUND it feeds the field from EnemyPool — up to
-## the concurrency cap, topping up as enemies die — until the round's budget
-## has spawned and died, then emits round_cleared and runs the PREP timer.
-## In v0.4.0 the loop is started/stopped by the debug WAVE button (the greybox
-## stays a free-fire range by default); real maps will drive this directly.
+## the concurrency ceiling, topping up as enemies die — until the round's
+## budget has spawned and died, then emits round_cleared and runs the PREP
+## timer. In v0.4.0 the loop is started/stopped by the debug WAVE button (the
+## greybox stays a free-fire range by default); real maps will drive this
+## directly.
+##
+## Placement, pacing, and the live concurrency ceiling are answered by
+## SpawnDirector (ARCH_PLAN §4) — this manager keeps sole ownership of the
+## lifecycle, the budget, and the round-clear gate, and exposes
+## round_progress() / live_count() so the director never counts in parallel.
 
 var config: RoundConfig = preload("res://resources/rounds/greybox_rounds.tres")
 
@@ -22,6 +28,10 @@ var _prep_timer: Timer
 
 func _ready() -> void:
 	_spawn_timer = Timer.new()
+	# One-shot, re-armed at the end of every _try_spawn: the interval is
+	# re-read from SpawnDirector on each arm, so the pressure curve shifts
+	# pacing spawn-by-spawn instead of once per round.
+	_spawn_timer.one_shot = true
 	_spawn_timer.timeout.connect(_try_spawn)
 	add_child(_spawn_timer)
 	_prep_timer = Timer.new()
@@ -57,30 +67,24 @@ func _begin_round(round_number: int) -> void:
 	_budget = config.budget_for(round_number)
 	_spawned_this_round = 0
 	EventBus.round_started.emit(round_number)
-	_try_spawn()  # first enemy lands immediately, not one interval late
-	_spawn_timer.start(config.spawn_interval)
+	_try_spawn()  # first enemy lands immediately, not one interval late; re-arms itself
 
 
 func _try_spawn() -> void:
 	if not running or GameState.phase != GameState.Phase.ROUND:
 		return
 	if _spawned_this_round >= _budget:
-		_spawn_timer.stop()
 		return
-	if _tracked.size() >= config.max_concurrent:
-		return  # topped out — a death will top up
-	var point := _pick_spawn_point()
-	if point == null:
-		push_warning("RoundManager: no enemy_spawn_point markers in scene")
-		return
-	var jitter := Vector3(randf_range(-0.8, 0.8), 0.0, randf_range(-0.8, 0.8))
-	var enemy := EnemyPool.acquire(point.global_position + jitter)
-	if enemy == null:
-		return  # pool ceiling — defer this spawn to the next tick
-	_tracked.append(enemy)
-	_spawned_this_round += 1
-	if _spawned_this_round >= _budget:
-		_spawn_timer.stop()
+	# The director scales the ceiling within config.max_concurrent by pressure.
+	if _tracked.size() < SpawnDirector.current_concurrency_ceiling():
+		var enemy := EnemyPool.acquire(SpawnDirector.next_spawn_position())
+		if enemy != null:  # null = pool ceiling — defer this spawn to the next arm
+			_tracked.append(enemy)
+			_spawned_this_round += 1
+	if _spawned_this_round < _budget:
+		# Re-arm (also when topped out or deferred — the retry cadence the old
+		# repeating timer provided). A death top-up resets the pending arm.
+		_spawn_timer.start(SpawnDirector.current_spawn_interval())
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
@@ -150,8 +154,12 @@ func _reset_run_state() -> void:
 	_spawned_this_round = 0
 
 
-func _pick_spawn_point() -> Node3D:
-	var points := get_tree().get_nodes_in_group("enemy_spawn_point")
-	if points.is_empty():
-		return null
-	return points[randi() % points.size()]
+## Fraction of this round's budget already spawned (0..1) — the pressure
+## curve's input. SpawnDirector reads this; it never keeps its own counter.
+func round_progress() -> float:
+	return 0.0 if _budget == 0 else float(_spawned_this_round) / float(_budget)
+
+
+## Round-tracked enemies currently on the field (debug spawns excluded).
+func live_count() -> int:
+	return _tracked.size()
