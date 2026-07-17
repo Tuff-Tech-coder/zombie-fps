@@ -172,9 +172,14 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
 - **`EnemyPool`** (autoload): `acquire(pos, scene := ZOMBIE_SCENE)` /
   `release(enemy)` with one free-list per enemy scene (walker, boss, ...);
   the hard cap `MAX_ENEMIES = 50` (DESIGN_DOC §3) is global across all
-  free-lists. Callers that don't pass a scene get the standard walker, so
-  `RoundManager` spawning is unchanged. Pooled nodes live under the autoload
-  and survive scene reloads — restart paths must call `release_all()`.
+  free-lists and caps the **live population** (`active_count()`), NOT
+  lifetime instantiations — dormant pooled nodes are process-disabled and
+  memory-only, and a total-count cap would permanently starve a second
+  scene's first instance once walkers had ever peaked at 50 (the v0.8.3
+  boss-no-show bug). Callers that don't pass a scene get the standard
+  walker, so `RoundManager` spawning is unchanged. Pooled nodes live under
+  the autoload and survive scene reloads — restart paths must call
+  `release_all()`.
 - Collision layers: 1 = world, 2 = player, 3 = enemy, 4 = interactable. Weapon
   rays exclude the wielder and hit everything else.
 
@@ -339,7 +344,23 @@ established manager precedent — no new EventBus signals
   `greybox_director.tres` into a measured number. Re-run it after any rig
   swap or horde-system change.
 
+## Round flow extras
+
+- **Skip prep** (v0.8.3.5, game feature): `RoundManager.skip_prep()` ends
+  the between-rounds PREP countdown early (`skip_prep` action, default N,
+  handled in RoundManager's `_unhandled_input`). It is a no-op outside a
+  live run's countdown — free-fire PREP and the boss hand-off are
+  unaffected. The HUD's `SkipNote` label (shown `round_cleared` →
+  `round_started`) reads the bound key from the InputMap so rebinds stay
+  truthful.
+
 ## Debug system (v0.3.0)
+
+- **Noclip** (v0.8.3.5): `debug_noclip` (default V) toggles
+  `DebugManager.noclip` and PUSHES it to `Player.set_noclip()` — free-fly
+  with collisions off. The debug layer drives the player's public
+  capability; the player never reads debug state for it, preserving the
+  one-guarded-check rule below.
 
 - **Everything debug lives in or routes through `DebugManager`** (autoload), gated
   by `DebugManager.is_enabled()` (`DEBUG_ENABLED` const AND `OS.is_debug_build()`).

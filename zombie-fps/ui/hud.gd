@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var weapon_label: Label = %WeaponName
 @onready var reload_label: Label = %ReloadNote
 @onready var round_label: Label = %RoundNote
+@onready var skip_label: Label = %SkipNote
 @onready var prompt_label: Label = %InteractPrompt
 @onready var supplies_label: Label = %Supplies
 
@@ -20,6 +21,13 @@ func _ready() -> void:
 	reload_label.visible = false
 	round_label.visible = false
 	prompt_label.visible = false
+	# Shown only during the between-rounds PREP countdown (round_cleared →
+	# round_started). The key name is read live so a rebind stays truthful.
+	skip_label.visible = false
+	for ev in InputMap.action_get_events(&"skip_prep"):
+		if ev is InputEventKey:
+			skip_label.text = "Press %s to skip prep" % (ev as InputEventKey).as_text_keycode()
+			break
 	EventBus.player_health_changed.connect(_on_health_changed)
 	EventBus.ammo_changed.connect(_on_ammo_changed)
 	EventBus.weapon_equipped.connect(_on_weapon_equipped)
@@ -130,11 +138,14 @@ func _on_reload_finished() -> void:
 func _on_round_started(round_number: int) -> void:
 	round_label.visible = true
 	round_label.text = "ROUND %d" % round_number
+	skip_label.visible = false
 
 
 func _on_round_cleared(round_number: int) -> void:
 	round_label.text = "ROUND %d CLEARED — PREP" % round_number
+	skip_label.visible = true
 
 
 func _on_map_cleared() -> void:
 	round_label.text = "MAP CLEARED"
+	skip_label.visible = false

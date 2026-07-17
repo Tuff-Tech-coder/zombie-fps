@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.8.3.5] — Skip-prep key, boss no-show fix, dev noclip
+
+### Added
+
+- **Skip prep** (game feature): pressing **N** during the between-rounds
+  PREP countdown starts the next round immediately
+  (`RoundManager.skip_prep()`; the `skip_prep` input action is
+  rebindable). The HUD shows "Press N to skip prep" — key name read live
+  from the InputMap — during that countdown and only then (free-fire
+  PREP and the boss hand-off show nothing).
+- **Dev-only noclip** (**V**, `debug_noclip` action): DebugManager toggle
+  pushes `Player.set_noclip()` — collisions off, camera-relative free-fly
+  (jump up / crouch down, sprint stacks, 3× walk speed), gravity ignored.
+  Gated on `DebugManager.is_enabled()`; the player itself keeps its single
+  debug check (state is pushed in, per CODE_GUIDE debug rules).
+
+### Fixed
+
+- **Boss never appeared after the final round on long runs**: the pool
+  ceiling gated on `total_count()` — lifetime instantiations — so once the
+  walker pool had ever peaked at 50 simultaneously-active bodies, the boss
+  scene's FIRST instance could never be created (reproduced: 50 walkers
+  instantiated → all pooled → `acquire(boss)` returned null with zero
+  live enemies, and the null-fallback silently finished the map).
+  `EnemyPool.acquire` now caps on **`active_count()`** — the live
+  population, which is what the perf ceiling means; dormant pooled nodes
+  are process-disabled and memory-only. Verified at the exact failure
+  state: 50 pooled walkers, boss spawns as the 51st instantiation with
+  breach.mp3 playing, kill ends the run. The unreachable null path now
+  warns loudly instead of failing silently.
+
 ## [0.8.3] — Phase-driven music pools, boss round, single-channel stinger
 
 > Audio patch on v0.8.2's rotation: round music now actually belongs to

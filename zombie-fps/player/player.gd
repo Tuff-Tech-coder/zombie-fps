@@ -42,9 +42,13 @@ const EYE_DROP := 0.15
 ## Physics layer 4 ("interactable") as a mask value.
 const INTERACT_MASK := 8
 
+## Noclip fly speed as a multiple of walk_speed (sprint stacks on top).
+const NOCLIP_SPEED_MULT := 3.0
+
 var health := 100.0
 var _pitch := 0.0
 var _crouching := false
+var _noclip := false
 var _dead := false
 var _jump_buffer := 0.0
 var _hop_accel := 0.0  # air accel chosen at liftoff, held for the whole hop
@@ -143,6 +147,9 @@ func _physics_process(delta: float) -> void:
 			velocity += get_gravity() * delta
 		move_and_slide()
 		return
+	if _noclip:
+		_noclip_move(delta)
+		return
 	_update_crouch(delta)
 	_update_jump_buffer(delta)
 	_update_interact_focus()
@@ -186,6 +193,31 @@ func _physics_process(delta: float) -> void:
 
 	_cap_horizontal_speed()
 	move_and_slide()
+
+
+## Dev-only capability, driven by DebugManager.toggle_noclip() — the player
+## itself never reads debug state for this (CODE_GUIDE debug rules). While
+## on: collisions off, camera-relative free-fly (jump = up, crouch = down,
+## sprint stacks), gravity ignored.
+func set_noclip(on: bool) -> void:
+	_noclip = on
+	collision_shape.disabled = on
+	velocity = Vector3.ZERO
+
+
+func _noclip_move(delta: float) -> void:
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var wish := camera.global_basis * Vector3(input_dir.x, 0.0, input_dir.y)
+	if Input.is_action_pressed("jump"):
+		wish.y += 1.0
+	if Input.is_action_pressed("crouch"):
+		wish.y -= 1.0
+	if wish.length_squared() > 0.0:
+		wish = wish.normalized()
+	var speed := walk_speed * NOCLIP_SPEED_MULT
+	if Input.is_action_pressed("sprint"):
+		speed *= sprint_multiplier
+	global_position += wish * speed * delta
 
 
 ## Short camera-center ray against the interactable layer. Tracks what's

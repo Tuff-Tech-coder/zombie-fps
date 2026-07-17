@@ -14,6 +14,7 @@ var infinite_ammo := false
 var infinite_health := false
 var show_enemy_health := false
 var show_perf_overlay := false
+var noclip := false
 
 var _wave_active := false  # lit state for the wave button
 var _spawn_cursor := 0
@@ -27,6 +28,24 @@ func _ready() -> void:
 
 func is_enabled() -> bool:
 	return DEBUG_ENABLED and OS.is_debug_build()
+
+
+## Dev-only keybind (debug_noclip, V): free-fly with collisions off. The
+## state lives here and is PUSHED to the player (Player.set_noclip), so the
+## player keeps its single DebugManager read (CODE_GUIDE debug rules).
+func _unhandled_input(event: InputEvent) -> void:
+	if is_enabled() and event.is_action_pressed(&"debug_noclip"):
+		toggle_noclip()
+
+
+func toggle_noclip() -> void:
+	if not is_enabled():
+		return
+	noclip = not noclip
+	var player: Player = get_tree().get_first_node_in_group("player")
+	if player != null:
+		player.set_noclip(noclip)
+	print("[debug] noclip %s" % ("ON" if noclip else "OFF"))
 
 
 ## Flips a flag and returns the new value (buttons use it for their lamp).

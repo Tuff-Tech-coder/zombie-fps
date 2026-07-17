@@ -130,6 +130,23 @@ func _on_prep_finished() -> void:
 	_begin_round(GameState.round_number + 1)
 
 
+## Game feature (v0.8.3.5): the player may cut the between-rounds PREP
+## countdown short. Only meaningful while a run is live and the prep timer
+## is actually counting — free-fire PREP (no run) and the boss hand-off
+## (no timer) are unaffected.
+func skip_prep() -> void:
+	if not running or GameState.phase != GameState.Phase.PREP \
+			or _prep_timer.is_stopped():
+		return
+	_prep_timer.stop()
+	_on_prep_finished()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"skip_prep"):
+		skip_prep()
+
+
 ## The map boss (v0.8.3): spawns once after the final round clears; stays in
 ## Phase.ROUND (it IS combat — and _try_spawn is inert with the budget met).
 ## The encounter dressing (health bar, arena) remains v0.9.0 scope.
@@ -137,8 +154,9 @@ func _begin_boss_round() -> void:
 	EventBus.boss_round_started.emit()
 	_boss = EnemyPool.acquire(SpawnDirector.next_spawn_position(), BOSS_SCENE)
 	if _boss == null:
-		# Pool ceiling edge — never strand the run waiting on a boss that
-		# could not spawn.
+		# Should be unreachable: the final round just cleared, so the live
+		# population is a handful of pooling corpses at most. Loud + safe.
+		push_warning("[rounds] boss failed to spawn (pool ceiling?) — finishing map")
 		_finish_map(GameState.round_number)
 
 

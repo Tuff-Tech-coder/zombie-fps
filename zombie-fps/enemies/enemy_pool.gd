@@ -5,7 +5,12 @@ extends Node
 ##
 ## One free-list per enemy scene (walker, map boss, ...); the MAX_ENEMIES
 ## ceiling is global across all of them, so a boss on the field takes a slot
-## out of the same 50 the horde uses.
+## out of the same 50 the horde uses. The ceiling caps the LIVE population
+## (active_count) — the perf-relevant number — not lifetime instantiations:
+## dormant pooled nodes are PROCESS_MODE_DISABLED and cost memory only, and
+## gating on total_count() would starve a second scene's first instance
+## forever once the walker pool had ever peaked at the cap (the v0.8.3
+## boss-no-show bug).
 
 const ZOMBIE_SCENE := preload("res://enemies/zombie_walker.tscn")
 const MAX_ENEMIES := 50  # hard population ceiling, DESIGN_DOC §3
@@ -13,14 +18,15 @@ const MAX_ENEMIES := 50  # hard population ceiling, DESIGN_DOC §3
 var _pools := {}  # PackedScene → Array[Enemy]
 
 
-## Returns an activated enemy at `pos`, or null if the ceiling is reached.
-## Callers that don't say which enemy they want get the standard walker.
+## Returns an activated enemy at `pos`, or null if the live-population
+## ceiling is reached. Callers that don't say which enemy they want get the
+## standard walker.
 func acquire(pos: Vector3, scene: PackedScene = ZOMBIE_SCENE) -> Enemy:
 	var pool: Array[Enemy] = _pools.get_or_add(scene, [] as Array[Enemy])
+	if active_count() >= MAX_ENEMIES:
+		return null  # field is full — reusing a pooled body would still exceed it
 	var enemy := _find_inactive(pool)
 	if enemy == null:
-		if total_count() >= MAX_ENEMIES:
-			return null
 		enemy = scene.instantiate() as Enemy
 		add_child(enemy)
 		enemy.deactivate()

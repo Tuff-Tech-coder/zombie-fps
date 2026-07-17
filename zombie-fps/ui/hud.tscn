@@ -37,6 +37,19 @@ theme_override_font_sizes/font_size = 22
 text = "ROUND 1"
 horizontal_alignment = 1
 
+[node name="SkipNote" type="Label" parent="Root"]
+unique_name_in_owner = true
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 54.0
+offset_right = 200.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.7, 0.85, 0.7, 0.8)
+theme_override_font_sizes/font_size = 15
+text = "Press N to skip prep"
+horizontal_alignment = 1
+
 [node name="Crosshair" type="ColorRect" parent="Root"]
 anchor_left = 0.5
 anchor_top = 0.5
