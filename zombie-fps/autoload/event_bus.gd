@@ -22,6 +22,7 @@ signal enemy_died(enemy)
 # -- rounds (live since v0.4.0; RoundManager is the only emitter) --
 signal round_started(round_number: int)
 signal round_cleared(round_number: int)
+signal boss_round_started()                    # after the final round (v0.8.3)
 
 # -- scavenge / inventory / interaction (live since v0.5.0) --
 signal inventory_changed(id: StringName, count: int)
@@ -36,5 +37,5 @@ signal perks_changed()
 signal debug_wave_start_requested()
 signal debug_wave_end_requested()
 
-# -- declared ahead of their milestones so downstream briefs slot in --
-signal map_cleared()                           # v0.9.0 boss hand-off
+# -- map completion (live since v0.8.3: emitted when the boss dies) --
+signal map_cleared()

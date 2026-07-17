@@ -5,6 +5,67 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.8.3] — Phase-driven music pools, boss round, single-channel stinger
+
+> Audio patch on v0.8.2's rotation: round music now actually belongs to
+> rounds, the death song can never stack or outlive a respawn — and the
+> map boss now actually spawns after the final round.
+
+### Added
+
+- **The boss round**: after the final round clears (`rounds_per_map`,
+  city 8 / greybox 5), RoundManager skips the PREP lull and spawns
+  `PumpkinBoss` at a director-chosen marker (`boss_round_started` on the
+  EventBus, phase stays ROUND); killing it emits `map_cleared` (now LIVE,
+  no longer reserved) and ends the run. Encounter dressing (health bar,
+  arena, difficulty pass) stays v0.9.0 scope.
+- **Boss music is live**: `boss_round_started` crossfades to the map's
+  `boss_track` (breach.mp3) played as a single-track pool — it loops for
+  the whole fight without the import loop flag; `map_cleared` returns to
+  the prep rotation as the victory lap.
+
+### Changed
+
+- **Music is phase-driven again, with the rotation kept per-phase**:
+  `MapMusic.tracks` split into **`prep_tracks`** (level load + PREP +
+  between rounds) and **`round_tracks`** (while a round is live).
+  AudioManager consumes `round_started`/`round_cleared` once more,
+  crossfading between the two pools; the shuffle-bag rotation (no
+  immediate repeats, advance on `finished`) runs within whichever pool is
+  active. Pool switches ride the existing two-player crossfade — the
+  outgoing song stops, never layers — and re-entering the already-active
+  pool keeps the current song running. An empty pool is silence by design;
+  both map soundtracks ship with populated pools — prep rotates
+  stitches / witness prevention, rounds rotate Killphase / pathogen /
+  repulse (a placeholder split of the six placeholder songs; reshuffling
+  is a .tres edit).
+- **Single-channel one-shot rule** baked into AudioManager: it owns a
+  FIXED set of players (two music + one dedicated stinger channel) and
+  always stop/replaces through them — ad-hoc players are banned. The
+  death stinger (city: `game_over.mp3`) plays on the dedicated channel
+  with stop-before-play, and `set_soundtrack()` (the respawn path) stops
+  it — one death = exactly one death song, a second death replaces it,
+  and it can't bleed into the new run.
+
+### Fixed
+
+- Death-song layering: `_on_player_died` used to spawn a fresh
+  AudioStreamPlayer per death (freed only when the stream finished), so
+  full-length death songs stacked across quick death/respawn cycles.
+
+### Verified (CLI harness, real kill-driven flow on the city map)
+
+- Load → prep rotation (witness prevention → stitches on song end);
+  WAVE → round pool at 0 dB with the prep player stopped (no overlap);
+  re-emitting `round_started` kept the same song at the same position.
+- Killing the (shortened) final round spawned the boss and crossfaded to
+  breach.mp3; forcing the song's end restarted breach (looping);
+  a headshot kill printed the map-cleared line, emitted `map_cleared`,
+  and returned the prep rotation with the run stopped.
+- Death: exactly ONE stinger player (`game_over.mp3`); a second death
+  restarted it in place (still one player); `set_soundtrack()` on respawn
+  stopped it and resumed the prep rotation.
+
 ## [0.8.2] — Rotating randomized soundtrack + T-pose spawn-flash fix
 
 > Off-roadmap patch on top of v0.8.1, driven by playtest feedback.

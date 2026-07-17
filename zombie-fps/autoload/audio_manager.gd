@@ -1,16 +1,24 @@
 extends Node
-## Music director + audio-bus owner (audio pass; rotation since v0.8.2).
-## Owns two AudioStreamPlayers on the Music bus. Regular play — prep and
-## rounds alike — rotates through the map's randomized track pool
-## (shuffle-bag, no immediate repeats, next pick whenever a song ends);
-## only the boss gets a dedicated song (RESERVED v0.9.0 seam). Completely
-## map-agnostic: every map's Level root hands its own MapMusic here —
-## adding a map's music is authoring data, never editing this file.
-## An empty pool means silence, no error.
+## Music director + audio-bus owner (audio pass; phase-driven pools since
+## v0.8.3). Owns a FIXED set of players — two crossfading music players and
+## one dedicated stinger channel, all on the Music bus — and always
+## stop/replaces through them. RULE: AudioManager never spawns ad-hoc
+## players that outlive their purpose; every future one-shot gets its own
+## dedicated, reused channel here.
+##
+## Regular music is phase-driven (EventBus): level load starts the
+## prep_tracks rotation, round_started crossfades to the round_tracks
+## rotation, round_cleared crossfades back. Within the active pool a
+## shuffle-bag rotates songs (no immediate repeats, next pick whenever a
+## song ends). Pool switches go through the two-player crossfade, so the
+## outgoing track always STOPS — never layers — and re-entering the active
+## pool never restarts the current song. An empty pool = silence, no error.
+## boss_round_started -> MapMusic.boss_track (the one dedicated song, looped
+## as a single-track pool); map_cleared (boss down) -> back to prep.
 ##
 ## Bus layout (default_bus_layout.tres): Master <- Music, Master <- SFX.
 ## Every world/weapon/enemy player routes to SFX (use SFX_BUS, never a bare
-## string); only the two players here live on Music.
+## string); only the players here live on Music.
 
 const MUSIC_BUS := &"Music"
 const SFX_BUS := &"SFX"
@@ -19,10 +27,12 @@ const DEATH_FADE := 1.5     ## seconds; player_died fades music out over this
 
 var _soundtrack: MapMusic
 var _players: Array[AudioStreamPlayer] = []
+var _stinger: AudioStreamPlayer
 var _fades: Array[Tween] = [null, null]
-var _active := 0            ## which player currently carries the music
+var _active := 0            ## which music player currently carries the music
 var _current: AudioStream   ## dedupe: re-requesting the playing track is a no-op
-var _bag: Array[AudioStream] = []  ## shuffle-bag for the rotation pool
+var _pool: Array[AudioStream] = []  ## the phase pool currently rotating
+var _bag: Array[AudioStream] = []   ## shuffle-bag drawn from _pool
 var _last_track: AudioStream
 
 
@@ -37,27 +47,76 @@ func _ready() -> void:
 		add_child(p)
 		_players.append(p)
 		p.finished.connect(_on_track_finished.bind(p))
+	_stinger = AudioStreamPlayer.new()
+	_stinger.name = "StingerPlayer"
+	_stinger.bus = MUSIC_BUS
+	add_child(_stinger)
+	EventBus.round_started.connect(_on_round_started)
+	EventBus.round_cleared.connect(_on_round_cleared)
+	EventBus.boss_round_started.connect(_on_boss_round_started)
+	EventBus.map_cleared.connect(_on_map_cleared)
 	EventBus.player_died.connect(_on_player_died)
-	# round_started/round_cleared are deliberately NOT consumed since v0.8.2:
-	# regular play rotates one randomized pool across prep AND rounds.
-	# EventBus.map_cleared -> MapMusic.boss_track: RESERVED seam for v0.9.0.
 
 
-## Level roots call this on load. Starts the rotation (also restarts it after
-## the game-over scene reload).
+## Level roots call this on load — and again after the game-over scene
+## reload, which is why it also silences the death stinger: the old run's
+## death song must never bleed into the new run.
 func set_soundtrack(soundtrack: MapMusic) -> void:
+	_stinger.stop()
 	_soundtrack = soundtrack
 	_current = null
+	# Fresh typed array, NOT clear() — _pool aliases the MapMusic resource's
+	# own array, which must never be mutated from here.
+	_pool = [] as Array[AudioStream]
+	if _soundtrack != null:
+		_enter_pool(_soundtrack.prep_tracks)
+	else:
+		_crossfade_to(null)
+
+
+func _on_round_started(_round_number: int) -> void:
+	if _soundtrack != null:
+		_enter_pool(_soundtrack.round_tracks)
+
+
+func _on_round_cleared(_round_number: int) -> void:
+	if _soundtrack != null:
+		_enter_pool(_soundtrack.prep_tracks)
+
+
+## The boss's ONE dedicated song, as a single-track pool: the shuffle-bag's
+## pools-of-one rule makes it restart on finished, i.e. it loops for the
+## whole fight without needing the import loop flag.
+func _on_boss_round_started() -> void:
+	if _soundtrack != null and _soundtrack.boss_track != null:
+		_enter_pool([_soundtrack.boss_track] as Array[AudioStream])
+	else:
+		_enter_pool([] as Array[AudioStream])  # no boss song authored = silence
+
+
+## Boss down: back to the prep rotation as the victory lap (a dedicated
+## victory cue can slot in here later without touching callers).
+func _on_map_cleared() -> void:
+	if _soundtrack != null:
+		_enter_pool(_soundtrack.prep_tracks)
+
+
+## Switch the rotation to a phase's pool. Re-entering the pool that is
+## already playing keeps the current song running untouched.
+func _enter_pool(pool: Array[AudioStream]) -> void:
+	if pool == _pool and _current != null:
+		return
+	_pool = pool
 	_bag.clear()
 	_play_next_random()
 
 
 func _play_next_random() -> void:
-	if _soundtrack == null or _soundtrack.tracks.is_empty():
+	if _pool.is_empty():
 		_crossfade_to(null)
 		return
 	if _bag.is_empty():
-		_bag = _soundtrack.tracks.duplicate()
+		_bag = _pool.duplicate()
 		_bag.shuffle()
 		# A fresh bag must not open with the song that just played
 		# (pools of one legitimately repeat — that's a looping soundtrack).
@@ -83,12 +142,11 @@ func _on_player_died() -> void:
 	for p in _players:
 		_fade(p, SILENCE_DB, DEATH_FADE, true)
 	if _soundtrack != null and _soundtrack.death_stinger != null:
-		var stinger := AudioStreamPlayer.new()
-		stinger.bus = MUSIC_BUS
-		stinger.stream = _soundtrack.death_stinger
-		add_child(stinger)
-		stinger.finished.connect(stinger.queue_free)
-		stinger.play()
+		# Dedicated channel, stop-before-play: a second death REPLACES the
+		# death song, it never layers a new player on top.
+		_stinger.stop()
+		_stinger.stream = _soundtrack.death_stinger
+		_stinger.play()
 
 
 func _crossfade_to(stream: AudioStream) -> void:

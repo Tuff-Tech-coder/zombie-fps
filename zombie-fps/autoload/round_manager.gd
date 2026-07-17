@@ -12,6 +12,8 @@ extends Node
 ## lifecycle, the budget, and the round-clear gate, and exposes
 ## round_progress() / live_count() so the director never counts in parallel.
 
+const BOSS_SCENE := preload("res://enemies/pumpkin_boss.tscn")
+
 var config: RoundConfig = preload("res://resources/rounds/greybox_rounds.tres")
 
 var running := false
@@ -21,6 +23,8 @@ var _spawned_this_round := 0
 ## Round-spawned enemies still on the field. Debug-button spawns are absent
 ## on purpose — they never count toward clearing a round.
 var _tracked: Array[Enemy] = []
+## The map boss, alive between the final round clearing and map_cleared.
+var _boss: Enemy = null
 
 var _spawn_timer: Timer
 var _prep_timer: Timer
@@ -88,6 +92,10 @@ func _try_spawn() -> void:
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
+	if enemy == _boss:
+		_boss = null
+		_finish_map(GameState.round_number)
+		return
 	# Untracked (debug-button) deaths still fall through to the clear check:
 	# a round must never close while ANY live enemy is on the field, so a
 	# lingering debug zombie defers the clear until it too is dead.
@@ -108,11 +116,13 @@ func _on_enemy_died(enemy: Enemy) -> void:
 func _end_round() -> void:
 	var cleared := GameState.round_number
 	_spawn_timer.stop()
+	if cleared >= config.rounds_per_map:
+		# The final round hands off straight to the boss — no PREP lull, no
+		# round_cleared (prep music must not flash in under the boss cue).
+		_begin_boss_round()
+		return
 	GameState.phase = GameState.Phase.PREP
 	EventBus.round_cleared.emit(cleared)
-	if cleared >= config.rounds_per_map:
-		_finish_map(cleared)
-		return
 	_prep_timer.start(config.prep_duration)
 
 
@@ -120,10 +130,22 @@ func _on_prep_finished() -> void:
 	_begin_round(GameState.round_number + 1)
 
 
+## The map boss (v0.8.3): spawns once after the final round clears; stays in
+## Phase.ROUND (it IS combat — and _try_spawn is inert with the budget met).
+## The encounter dressing (health bar, arena) remains v0.9.0 scope.
+func _begin_boss_round() -> void:
+	EventBus.boss_round_started.emit()
+	_boss = EnemyPool.acquire(SpawnDirector.next_spawn_position(), BOSS_SCENE)
+	if _boss == null:
+		# Pool ceiling edge — never strand the run waiting on a boss that
+		# could not spawn.
+		_finish_map(GameState.round_number)
+
+
 func _finish_map(final_round: int) -> void:
 	running = false
-	# Boss hand-off seam — the map boss consumes this in v0.9.0.
-	print("[rounds] map cleared after %d rounds — boss fight lands in v0.9.0" % final_round)
+	GameState.phase = GameState.Phase.PREP
+	print("[rounds] map cleared: boss down after %d rounds" % final_round)
 	EventBus.map_cleared.emit()
 
 
@@ -152,6 +174,7 @@ func _reset_run_state() -> void:
 	GameState.phase = GameState.Phase.PREP
 	_budget = 0
 	_spawned_this_round = 0
+	_boss = null
 
 
 ## Fraction of this round's budget already spawned (0..1) — the pressure

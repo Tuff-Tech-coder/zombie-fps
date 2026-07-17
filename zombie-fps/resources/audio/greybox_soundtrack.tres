@@ -1,17 +1,17 @@
-[gd_resource type="Resource" script_class="MapMusic" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MapMusic" load_steps=9 format=3 uid="uid://b8acq57cs4g4u"]
 
 [ext_resource type="Script" uid="uid://cus3nptwl8gb6" path="res://audio/map_music.gd" id="1_mm"]
 [ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_prep_loop.res" id="2_sti"]
-[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="3_kil"]
-[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="4_pat"]
-[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="5_rep"]
-[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_prep_loop.res" id="6_wit"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_prep_loop.res" id="3_wit"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="4_kil"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="5_pat"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="6_rep"]
 [ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="7_bre"]
 [ext_resource type="AudioStream" path="res://resources/audio/generated/death_stinger.res" id="8_dth"]
 
 [resource]
 script = ExtResource("1_mm")
-tracks = Array[AudioStream]([ExtResource("2_sti"), ExtResource("3_kil"), ExtResource("4_pat"), ExtResource("5_rep"), ExtResource("6_wit")])
+prep_tracks = Array[AudioStream]([ExtResource("2_sti"), ExtResource("3_wit")])
+round_tracks = Array[AudioStream]([ExtResource("4_kil"), ExtResource("5_pat"), ExtResource("6_rep")])
 boss_track = ExtResource("7_bre")
 death_stinger = ExtResource("8_dth")
-crossfade_time = 2.0

@@ -32,8 +32,8 @@
 [ext_resource type="Resource" path="res://resources/items/ethanol.tres" id="30_eth"]
 [ext_resource type="Resource" path="res://resources/items/cherry_extract.tres" id="31_che"]
 [ext_resource type="Resource" path="res://resources/items/electrolytes.tres" id="32_ele"]
-[ext_resource type="Script" path="res://world/level.gd" id="33_lvl"]
-[ext_resource type="Resource" path="res://resources/audio/greybox_soundtrack.tres" id="34_snd"]
+[ext_resource type="Script" uid="uid://bvj4leahei22m" path="res://world/level.gd" id="33_lvl"]
+[ext_resource type="Resource" uid="uid://b8acq57cs4g4u" path="res://resources/audio/greybox_soundtrack.tres" id="34_snd"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1

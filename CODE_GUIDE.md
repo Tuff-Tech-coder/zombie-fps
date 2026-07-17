@@ -441,24 +441,35 @@ established manager precedent — no new EventBus signals
 - **Buses** (`default_bus_layout.tres`): `Master ← Music`, `Master ← SFX`.
   Every world/weapon/enemy player routes to **SFX** (`AudioManager.SFX_BUS`,
   never a bare string); only AudioManager's two music players sit on Music.
-- **`AudioManager`** (autoload) owns music: two crossfading players running a
-  **randomized rotation** (v0.8.2) — regular play (prep AND rounds alike)
-  draws from the map's `tracks` pool via a shuffle-bag (no immediate
-  repeats), rolling to the next pick on the player's `finished` signal
-  whenever a song ends; `player_died` → fade-out + optional stinger.
-  `round_started`/`round_cleared` are deliberately unconsumed since v0.8.2.
-  `map_cleared` → `MapMusic.boss_track` (the ONE dedicated song) is the
-  RESERVED seam for the v0.9.0 boss. Empty pool = silence — never an error.
-  **Pool tracks must not have the import loop flag set** — a looping stream
-  never emits `finished`, which stalls the rotation.
+- **`AudioManager`** (autoload) owns music through a **fixed set of
+  players** — two crossfading music players + one dedicated stinger
+  channel, all on the Music bus. **Single-channel rule: it always
+  stop/replaces through these players and NEVER spawns ad-hoc players that
+  outlive their purpose** (a future one-shot gets its own dedicated,
+  reused channel). Music is **phase-driven with per-phase rotation pools**
+  (v0.8.3): level load starts the `prep_tracks` rotation, `round_started`
+  crossfades to `round_tracks`, `round_cleared` crossfades back; within
+  the active pool a shuffle-bag rotates songs (no immediate repeats, next
+  pick on `finished`). Pool switches ride the two-player crossfade so the
+  outgoing song STOPS (never layers) and re-entering the active pool never
+  restarts the current song. `player_died` → music fade + stinger on the
+  dedicated channel (stop-before-play; also stopped by
+  `set_soundtrack()` so a death song can't bleed past the respawn).
+  `boss_round_started` → `MapMusic.boss_track`, the boss's ONE dedicated
+  song, played as a single-track pool so it loops for the whole fight
+  without the import loop flag; `map_cleared` (boss down) → back to the
+  prep rotation. Empty pool = silence — never an error. **Pool tracks
+  must not have the import loop flag set** — a looping stream never emits
+  `finished`, which stalls the rotation.
 - **Per-map soundtracks (the contract)**: each map authors a **`MapMusic`**
   .tres (`audio/map_music.gd` schema → `resources/audio/<map>_soundtrack.tres`:
-  `tracks` rotation pool + dedicated `boss_track` + optional stinger)
-  and declares it on its **`Level`** root (`world/level.gd`, `@export
-  soundtrack`; assign in the scene like greybox, or preload-in-code like
-  `city.gd`). `Level._ready` hands it to `AudioManager.set_soundtrack()` —
-  the manager stays completely map-agnostic, so a new map's music is a new
-  .tres, never an AudioManager edit. First real songs live under
+  `prep_tracks` + `round_tracks` pools, dedicated `boss_track`, optional
+  stinger) and declares it on its **`Level`** root (`world/level.gd`,
+  `@export soundtrack`; assign in the scene like greybox, or
+  preload-in-code like `city.gd`). `Level._ready` hands it to
+  `AudioManager.set_soundtrack()` — the manager stays completely
+  map-agnostic, so a new map's music is a new .tres, never an
+  AudioManager edit. First real songs live under
   `resources/audio/placeholder/`.
 - **Weapon SFX are data**: `WeaponData.fire_sound/reload_sound/dry_sound` —
   assign a file in the gun's .tres to replace the synth placeholder;
