@@ -64,6 +64,7 @@ func _ready() -> void:
 	_anim_tree.active = true
 	_playback = _anim_tree.get("parameters/playback")
 	_playback.start(&"locomotion")
+	_anim_tree.advance(0.0)  # pose immediately; see reset_visual()
 	set_process(false)  # _process only ticks in REDUCED
 
 
@@ -88,6 +89,10 @@ func play_death() -> void:
 func reset_visual() -> void:
 	set_lod_level(LOD.FULL, 0.0)
 	_playback.start(&"locomotion")
+	# Pose NOW, not next idle frame: a pending start() leaves the skeleton at
+	# REST (a T-pose on retargeted rigs) for the frame(s) until the tree first
+	# evaluates — a visible flash on every on-camera spawn.
+	_anim_tree.advance(0.0)
 
 
 ## State switches must land visibly even while LOD-throttled: a PAUSED corpse

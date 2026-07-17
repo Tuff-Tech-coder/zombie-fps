@@ -1,13 +1,16 @@
 class_name MapMusic
 extends Resource
-## Per-map soundtrack contract (audio pass): EVERY map authors one of these
-## as a .tres under resources/audio/ and assigns it on its Level root —
-## AudioManager stays completely map-agnostic, so adding a map's music is
-## authoring data, never editing the manager. An unassigned track means
-## silence for that phase, by design (no error, no fallback).
+## Per-map soundtrack contract (audio pass; rotation since v0.8.2): EVERY map
+## authors one of these as a .tres under resources/audio/ and assigns it on
+## its Level root — AudioManager stays completely map-agnostic. Regular play
+## (prep AND rounds alike) draws random tracks from the `tracks` pool with no
+## immediate repeats, rolling to the next pick whenever a song ends; only the
+## boss gets one dedicated song. An empty pool means silence, by design.
+##
+## Pool tracks must NOT have the import loop flag set — rotation relies on
+## the player's `finished` signal, which a looping stream never emits.
 
-@export var prep_track: AudioStream      ## level load / free-fire / between rounds
-@export var combat_track: AudioStream    ## while a round is live
-@export var boss_track: AudioStream      ## RESERVED — v0.9.0 boss/victory hook
-@export var death_stinger: AudioStream   ## optional one-shot as the player dies
-@export_range(0.1, 10.0) var crossfade_time := 2.0  ## seconds, prep <-> combat
+@export var tracks: Array[AudioStream] = []  ## rotation pool: prep + rounds
+@export var boss_track: AudioStream          ## dedicated — RESERVED v0.9.0 boss hook
+@export var death_stinger: AudioStream       ## optional one-shot as the player dies
+@export_range(0.1, 10.0) var crossfade_time := 2.0  ## seconds between rotations

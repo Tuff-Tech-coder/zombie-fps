@@ -441,19 +441,25 @@ established manager precedent — no new EventBus signals
 - **Buses** (`default_bus_layout.tres`): `Master ← Music`, `Master ← SFX`.
   Every world/weapon/enemy player routes to **SFX** (`AudioManager.SFX_BUS`,
   never a bare string); only AudioManager's two music players sit on Music.
-- **`AudioManager`** (autoload) owns music: two crossfading players, phases
-  driven by EventBus signals — level load → prep track (also the free-fire
-  default), `round_started` → combat, `round_cleared` → prep,
-  `player_died` → fade-out + optional stinger. `map_cleared`/`boss_track`
-  is a RESERVED seam for the v0.9.0 boss. An unassigned track for a phase
-  is silence — never an error.
+- **`AudioManager`** (autoload) owns music: two crossfading players running a
+  **randomized rotation** (v0.8.2) — regular play (prep AND rounds alike)
+  draws from the map's `tracks` pool via a shuffle-bag (no immediate
+  repeats), rolling to the next pick on the player's `finished` signal
+  whenever a song ends; `player_died` → fade-out + optional stinger.
+  `round_started`/`round_cleared` are deliberately unconsumed since v0.8.2.
+  `map_cleared` → `MapMusic.boss_track` (the ONE dedicated song) is the
+  RESERVED seam for the v0.9.0 boss. Empty pool = silence — never an error.
+  **Pool tracks must not have the import loop flag set** — a looping stream
+  never emits `finished`, which stalls the rotation.
 - **Per-map soundtracks (the contract)**: each map authors a **`MapMusic`**
-  .tres (`audio/map_music.gd` schema → `resources/audio/<map>_soundtrack.tres`)
+  .tres (`audio/map_music.gd` schema → `resources/audio/<map>_soundtrack.tres`:
+  `tracks` rotation pool + dedicated `boss_track` + optional stinger)
   and declares it on its **`Level`** root (`world/level.gd`, `@export
   soundtrack`; assign in the scene like greybox, or preload-in-code like
   `city.gd`). `Level._ready` hands it to `AudioManager.set_soundtrack()` —
   the manager stays completely map-agnostic, so a new map's music is a new
-  .tres, never an AudioManager edit.
+  .tres, never an AudioManager edit. First real songs live under
+  `resources/audio/placeholder/`.
 - **Weapon SFX are data**: `WeaponData.fire_sound/reload_sound/dry_sound` —
   assign a file in the gun's .tres to replace the synth placeholder;
   unset falls back to `PlaceholderSfx` (the game must stay audible with

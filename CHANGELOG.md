@@ -5,6 +5,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.8.2] — Rotating randomized soundtrack + T-pose spawn-flash fix
+
+> Off-roadmap patch on top of v0.8.1, driven by playtest feedback.
+
+### Changed
+
+- **Music is now a randomized rotation, not phase crossfades**: `MapMusic`
+  replaces `prep_track`/`combat_track` with a **`tracks` pool** — regular
+  play (prep AND rounds alike) draws random songs via a shuffle-bag (every
+  song plays once per cycle, no immediate repeats) and rolls to the next
+  pick the moment a song ends (fixes "the round song ends and nothing
+  replaces it" — rotation rides the player's `finished` signal, so pool
+  tracks must NOT set the import loop flag). Only the boss keeps ONE
+  dedicated song (`boss_track`, still the reserved v0.9.0 seam).
+  `round_started`/`round_cleared` are deliberately no longer consumed by
+  AudioManager. Both map soundtracks now pool the five
+  `resources/audio/placeholder/` songs (stitches / Killphase / pathogen /
+  repulse / witness prevention) with `breach` as the dedicated boss song.
+
+### Fixed
+
+- **T-pose flash on spawn** (the residual "enemies T-pose when moving"
+  report): `reset_visual()`'s `playback.start()` only takes effect on the
+  tree's next evaluation, leaving the retargeted rest pose (a T) visible
+  for the first frame(s) of every on-camera spawn — caught live as a
+  `Start`-node rest-pose sample on a FULL-LOD fresh spawn. `EnemyVisual`
+  now forces a zero-delta `advance()` immediately after starting locomotion
+  in `_ready` and `reset_visual()`.
+
+### Verified (live via MCP, city map)
+
+- Launch picked a random pool song; four forced song-ends rotated through
+  the remaining four (full bag, zero repeats, zero silence gaps); death
+  faded both players out; restart resumed rotation with a fresh pick.
+- Three T-pose soak passes (0.25 s sampling) across fresh waves, mass
+  kills, pool reuse, and a round transition: **zero** rest-pose incidents,
+  including 35 sampled SPAWNING windows (the previous flash reproducer) —
+  and a game-over pause froze a spawning enemy posed, not T-posed.
+
 ## [0.8.1] — Audio system: buses, AudioManager, per-map soundtracks, data-driven SFX
 
 > Off-roadmap patch (like the v0.4.2 bhop patch). Replaces "synth-only" with
