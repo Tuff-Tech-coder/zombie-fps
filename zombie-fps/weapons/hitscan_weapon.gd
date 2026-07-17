@@ -21,7 +21,8 @@ var _model_rest: Transform3D
 func _ready() -> void:
 	super()
 	_model_rest = model.transform
-	fire_audio.stream = PlaceholderSfx.gunshot()
+	fire_audio.stream = data.fire_sound if data.fire_sound else PlaceholderSfx.gunshot()
+	fire_audio.bus = AudioManager.SFX_BUS
 	flash_timer.timeout.connect(func() -> void: muzzle_flash.visible = false)
 	# The wielder's body must never eat its own rays.
 	var body: Node = get_parent()

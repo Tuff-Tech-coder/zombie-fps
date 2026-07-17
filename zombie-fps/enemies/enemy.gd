@@ -7,7 +7,9 @@ extends CharacterBody3D
 ##
 ## Scene contract: Visual (EnemyVisual — owns the Model and ALL animation;
 ## this base speaks intent only and never touches animation machinery),
-## NavigationAgent3D, HeadShape (weak-point CollisionShape3D), HealthLabel.
+## NavigationAgent3D, HeadShape (weak-point CollisionShape3D), HealthLabel,
+## and an optional Sfx (AudioStreamPlayer3D on the SFX bus) for the
+## data-driven vocal set below.
 
 enum State { SPAWNING, CHASING, ATTACKING, DEAD }
 
@@ -17,7 +19,7 @@ const MASK_WORLD_PLAYER_ENEMY := 7
 @export_group("Stats")
 @export var max_health := 60.0
 @export var weakpoint_multiplier := 2.0
-@export var move_speed := 2.2
+@export var move_speed := 5.2
 @export var turn_speed := 8.0
 @export var attack_damage := 15.0
 @export var attack_range := 1.7
@@ -25,6 +27,13 @@ const MASK_WORLD_PLAYER_ENEMY := 7
 @export var attack_hit_time := 0.45  ## seconds into the attack when damage lands
 @export var spawn_delay := 0.4
 @export var death_duration := 2.6    ## death anim + corpse linger before pooling
+
+@export_group("Audio")
+## Data-driven vocal set (audio pass): plays on the scene's optional Sfx
+## player at the AI transitions. Unset stream or missing node = silent.
+@export var chase_sound: AudioStream   ## groan on entering CHASING
+@export var attack_sound: AudioStream  ## snarl as a swing starts
+@export var death_sound: AudioStream   ## gurgle from die()
 
 var health := 0.0
 var state := State.DEAD
@@ -39,6 +48,7 @@ var _attack_did_hit := false
 @onready var visual: EnemyVisual = $Visual
 @onready var head_shape: CollisionShape3D = $HeadShape
 @onready var health_label: Label3D = $HealthLabel
+@onready var _sfx: AudioStreamPlayer3D = get_node_or_null("Sfx")
 
 
 func _ready() -> void:
@@ -116,6 +126,7 @@ func die() -> void:
 	collision_mask = 0
 	EnemyNavManager.unregister(self)
 	visual.play_death()
+	_play_sound(death_sound)
 	_update_health_label()
 	EventBus.enemy_died.emit(self)
 	await get_tree().create_timer(death_duration).timeout
@@ -157,6 +168,7 @@ func _enter_chase() -> void:
 	state = State.CHASING
 	_state_time = 0.0
 	visual.play_locomotion()
+	_play_sound(chase_sound)
 
 
 func _chase(delta: float) -> void:
@@ -194,6 +206,7 @@ func _start_attack() -> void:
 	velocity.x = 0.0
 	velocity.z = 0.0
 	visual.play_attack()
+	_play_sound(attack_sound)
 
 
 func _attack_update(delta: float) -> void:
@@ -230,6 +243,15 @@ func _on_velocity_computed(safe_velocity: Vector3) -> void:
 
 func _face(dir: Vector3, delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), turn_speed * delta)
+
+
+## Positional one-shot on the optional Sfx player. Data-driven and safe:
+## an unset stream or a scene without the node is simply silent.
+func _play_sound(stream: AudioStream) -> void:
+	if _sfx == null or stream == null:
+		return
+	_sfx.stream = stream
+	_sfx.play()
 
 
 func _find_player() -> Player:

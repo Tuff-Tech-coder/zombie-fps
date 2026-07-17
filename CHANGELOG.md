@@ -5,6 +5,204 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [0.8.1] — Audio system: buses, AudioManager, per-map soundtracks, data-driven SFX
+
+> Off-roadmap patch (like the v0.4.2 bhop patch). Replaces "synth-only" with
+> a real audio architecture; the synth placeholders remain the fallback so
+> the game is audible with zero sound assets.
+
+### Added
+
+- **Music / SFX buses** (`default_bus_layout.tres`, both send → Master).
+  Every world/weapon/enemy player routes to SFX via `AudioManager.SFX_BUS`;
+  volumes verified independent.
+- **`AudioManager`** (autoload): two crossfading music players on the Music
+  bus, phase-driven purely by EventBus — level load → prep track (free-fire
+  default), `round_started` → combat, `round_cleared` → prep,
+  `player_died` → fade + optional stinger (runs through the game-over pause,
+  `PROCESS_MODE_ALWAYS`). `map_cleared`/`boss_track` left as the RESERVED
+  v0.9.0 seam. Unassigned phase track = silence, no error.
+- **Per-map soundtracks — the core contract**: `MapMusic` resource schema
+  (`audio/map_music.gd`: prep/combat/(reserved) boss tracks, death stinger,
+  crossfade_time) authored per map under `resources/audio/`. Each map's root
+  is now a **`Level`** (`world/level.gd`) that hands its own `soundtrack`
+  .tres to `AudioManager.set_soundtrack()` — greybox assigns
+  `greybox_soundtrack.tres` in-scene; `city.gd` preloads
+  `city_soundtrack.tres` beside its round/director configs. AudioManager
+  contains zero map knowledge: a new map's music = a new .tres.
+- **Data-driven weapon SFX**: `WeaponData.fire_sound / reload_sound /
+  dry_sound` — a real gun sound is a file assigned in the .tres; unset
+  falls back to the synth `PlaceholderSfx` (current behavior preserved).
+  Same swappable pattern added to `ImpactEffect.impact_sound` and
+  `DestructibleLight.break_sound`; turret gunfire, electric trap hum and
+  Electric Cherry zaps re-routed to the SFX bus.
+- **Enemy SFX** (enemies were silent): optional `Sfx` AudioStreamPlayer3D in
+  the enemy scene contract + `Enemy.chase_sound / attack_sound / death_sound`
+  exports triggered from the AI transitions (`_enter_chase`, `_start_attack`,
+  `die()`; the boss's leap windup reuses the attack snarl as its audible
+  telegraph). Data-driven, silent when unset; both enemy scenes ship with the
+  generated placeholder vocal set (boss at `pitch_scale 0.65`).
+- **Generated placeholder audio** (`audio/_sfx_bake.gd`, headless one-shot in
+  the `_texture_bake.gd` tradition): deterministic synth music loops (greybox
+  A-rooted 100 BPM pair, city D-rooted 110 BPM pair — audibly distinct on
+  purpose), death stinger, and the zombie groan/snarl/gurgle set, committed
+  as `resources/audio/generated/*.res`. Swapping in real CC0 files
+  (DESIGN_DOC §10) is editing the .tres references only.
+
+### Fixed
+
+- `[audio] buses/default_bus_layout` in `project.godot` pointed at a
+  non-existent `res://music` — now points at the real bus layout.
+
+### Verified (CLI harness, headless-driven)
+
+- Music=bus 1 / SFX=bus 2; −20 dB on Music leaves SFX at 0 dB (independent).
+- City load → `city_prep_loop` at 0 dB; `round_started` → crossfade to
+  `city_combat_loop` (prep at −60, stopped); `round_cleared` → back to prep;
+  `player_died` → both players fading (caught at −28 dB) with the stinger
+  playing over the game-over pause.
+- Greybox load → `greybox_prep_loop` — a different track through identical
+  code: per-map soundtracks proven with two live maps.
+- Weapon: unset `fire_sound` → synth fallback (runtime-generated
+  AudioStreamWAV) on the SFX bus; assigning a stream on a duplicated
+  WeaponData made the fresh weapon play it instead.
+- Walker: vocal set assigned, `Sfx` on the SFX bus, groan playing (and
+  positional) the moment `_enter_chase` fired.
+
+## [Unreleased] — Mixamo enemy models: Romero walker + Pumpkinhulk map-boss placeholder
+
+> First final-quality rigs through the Phase 1 `EnemyVisual` retargeted seam.
+> Version bump to be coordinated with the maintainer (uses 2 of the ≤4
+> enemy-type budget, DESIGN_DOC §11).
+
+### Added
+
+- **Mixamo "Romero"** (`enemies/models/romero/`) is the standard walker's rig:
+  gaunt bloodied shambler, T-pose FBX imported retargeted
+  (`import_as_skeleton_bones=true` + BoneMap vs `SkeletonProfileHumanoid`),
+  ~1.77 m tall at natural scale. `zombie_walker.tscn` is a pure resource swap —
+  zero `enemy.gd` edits: `Visual/Model` → Romero, the three clip exports →
+  `"shared/Zombie{Walk,Attack,Death}"`, `HeadShape`/body capsule realigned to
+  the hunched-shamble silhouette measured in-game (head sphere r=0.26 @
+  (0, 1.45, -0.08); capsule r=0.35 h=1.4, shortened so head-height rays reach
+  the head sphere instead of the capsule dome).
+- **Mixamo "Pumpkinhulk L Shaw"** → **`PumpkinBoss`**
+  (`enemies/pumpkin_boss.gd` + `.tscn`), the map-boss placeholder
+  (DESIGN_DOC §6/§11: tougher enemy, ONE special behavior, no phases): thin
+  `extends Enemy` subclass; tanky via scene export overrides only
+  (health 450 = 7.5× walker, speed 3.2, damage 30, range 2.4, death 4.6 s).
+  Model scaled 1.4× → ~2.86 m; pumpkin head is the weak point: the mutant
+  gait/swipe swing the pumpkin through a ~2 m envelope, so the `HeadShape`
+  sphere (r=0.5) is **bone-tracked** — `PumpkinBoss._track_head_shape()`
+  follows the Head bone each physics frame (runtime-resolved like
+  `EnemyVisual`'s player lookup; body capsule r=0.6 h=2.4; body=shape 0,
+  head=shape 1 contract intact).
+- **Anti-kite leap** (the boss's one special behavior), entirely inside
+  `PumpkinBoss` via `_physics_process` override + `super` delegation — base
+  state machine untouched: past `leap_trigger_distance` (12 m, CHASING,
+  unstunned, on floor, off cooldown) the boss telegraphs
+  (`visual.play_attack()`, `leap_windup` 0.4 s), re-aims, then arcs
+  velocity-driven through `move_and_slide()` (walls stop it; leap owns Y) to
+  land `leap_landing_gap` (3 m) SHORT of the player — standing still eats the
+  ordinary follow-up melee, moving slips it. `leap_damage` default 0 (no
+  landing thump). All eight knobs are `@export`s; placeholder values for the
+  maintainer. Leap never writes `agent.target_position` (one-writer rule
+  intact); `reset()` override clears leap state for pool reuse.
+- **Shared retargeted `AnimationLibrary`**
+  (`enemies/models/mixamo_shared/zombie_shared_anims.res`): 7 Mixamo clips
+  (zombie walk/attack/death + run spare; mutant walk/swipe/death), exported
+  Without Skin @30 fps, retargeted through `SkeletonProfileHumanoid` and
+  compressed (`Animation.compress()`). One library serves both rigs (clip
+  memory constant per MODEL_BUDGET). TWO BoneMaps ship alongside — Mixamo
+  bone prefixes differ per character (`mixamorig_*` hulk / `mixamorig5_*`
+  Romero, `:`→`_` sanitized on import). **Mixamo's "In Place" export option
+  did NOT strip root motion** on any walk/run clip (1.3–2.4 m of Hips travel
+  per loop → the visual sawtooths off its collider), so the library build
+  pins every locomotion clip's Hips position track to its first-frame X/Z
+  (Y bob kept) before compressing.
+- **Debug SPAWN BOSS button** (debug strip, same shootable pattern):
+  `DebugManager.spawn_boss()` → `EnemyPool.acquire(pos, BOSS_SCENE)` at the
+  near marker, so boss + leap are testable before the v0.9.0 encounter.
+- Mixamo origin notes (`MIXAMO_ORIGIN.md`) under each model folder; CREDITS
+  rows for both characters + the clip set.
+
+### Changed
+
+- **`EnemyPool` generalized to per-scene free-lists**
+  (`acquire(pos, scene := ZOMBIE_SCENE)`, `Dictionary[PackedScene → Array]`):
+  boss pools separately from walkers; instantiate-once/recycle contract and
+  the **global** `MAX_ENEMIES=50` cap unchanged; `active_count()` /
+  `has_live_enemies()` / `release_all()` / `total_count()` sum across pools.
+  `RoundManager` untouched (default arg).
+- `debug_panel.tscn` board widened for the 11th button.
+
+### Budget notes (MODEL_BUDGET.md) — flagged, not hidden
+
+- **Bones**: Romero 66, Pumpkinhulk 67 (both incl. fingers + one node-bone)
+  vs the ≤40/≈55 ceiling — no local DCC tooling (no Blender) to strip
+  fingers; animation-LOD carries the cost until a decimation pass.
+- **Tris**: Pumpkinhulk 9,620 (1 surface/material ✓) — singular boss,
+  acceptable overage. **Romero 49,593 tris / 2 surfaces** — far over the
+  2–4 k target for the pooled walker; importer-generated mesh LODs +
+  animation-LOD mitigate, but this is THE candidate for the
+  PROFILING_PLAYBOOK step-2 spawn-ramp before any 50-walker soak. Decimation
+  (and a texture atlas to get back to 1 draw call) needs a DCC pass —
+  deliberately not attempted here.
+- **Nav**: boss capsule r=0.6 / agent r=0.7 vs the city navmesh baked at
+  `agent_radius 0.45` — the boss can clip tight alleys/doorways. Flagged per
+  the brief (bigger nav agent bake, or keep the boss to open arenas — data
+  decision, not silently fixed). Boss round-spawn pacing also deliberately
+  unbuilt (v0.9.0 encounter scope).
+
+### Fixed (post-review)
+
+- **Enemies faced away from the player**: the retarget import already leaves
+  Mixamo rigs facing +Z, which is the axis `Enemy._face` points at movement —
+  the 180° Y flips on both `Model` nodes made them walk backwards. Flips
+  removed (walker `HeadShape` z-offset mirrored to match). Verified by
+  screenshot on a CLI harness run — the earlier "model forward" vector check
+  measured the wrong axis convention.
+- **T-posing while moving / on death**: wave spawns land far off-screen and
+  `AnimationLODManager` can demote them to PAUSED **before the AnimationTree's
+  first evaluation** — the playback never leaves the state machine's Start
+  node and the skeleton freezes at REST pose (a literal T-pose on retargeted
+  rigs; KayKit's idle-like rest pose had masked the same latent race).
+  `EnemyVisual` now forces a zero-delta `advance()` when a state change or
+  demotion lands on a throttled tree. Reproduced (enemies stuck on `Start`
+  with rest-pose gliding at 5.2 m/s) and re-verified clean over a full wave
+  in the city map via CLI harness.
+
+### Verified (all in-game via the MCP harness, city map)
+
+- **Walker parity through the new rig**: debug spawn → SPAWNING → CHASING at
+  5.2 m/s (model forward · velocity = 0.998, no moonwalk) → ATTACKING with
+  model forward exactly on the player vector → melee actually killed the
+  test player → death anim node `death` plays once, collision drops, pooled
+  invisible after `death_duration`. Weak point exact: body hit 60→48 (1×),
+  head hit 48→24 (2×).
+- **Headshot alignment vs the VISIBLE head** (camera-origin raycasts at the
+  head bone, the same query weapons use): walker 6/6 head-shape hits while
+  walking; boss 7/8 at 8 m engagement range (1 miss raced a teleport, hit
+  nothing — no wrong-shape damage). Boss point-blank rays from under the
+  chin legitimately hit the chest (real occlusion, not misalignment).
+- **Boss**: spawns via SPAWN BOSS as `PumpkinBoss` (450 hp, 3.2 m/s), own
+  free-list (walker + boss = total 2 under the one autoload), pumpkin 2×
+  (450→400 body, 400→300 head), MutantDeath → pooled after 4.6 s, and the
+  SAME instance re-acquired on respawn with full health and clean leap state.
+- **Leap**: at 13.2 m (> trigger 12) — windup tell, airborne at t≈0.75 s
+  (y=1.03 arc), landed with cooldown counting (4.73 s), state stayed CHASING
+  through `super` delegation, then the ordinary attack: standing player ate
+  exactly 30 (100→70); a player who moved during the follow-up took 0. While
+  falling (no floor), the leap correctly refused to trigger. Export-driven:
+  dropping `leap_trigger_distance` 12→6 at runtime made a 7 m kite trigger
+  the pounce; windup/cooldown writes behaved likewise — zero code edits.
+- **Animation-LOD on both rigs**: REDUCED (walker @18 m stunned, boss
+  @12.5 m): `lod=1`, `AnimationTree.active=false`, pose still advancing
+  (manual 10 Hz). PAUSED (walker @32 m): `lod=2`, pose frozen. FULL
+  restored on approach. Locomotion looped across minutes of testing on both.
+- `RoundManager` untouched: normal wave spawning unchanged through the
+  default-arg pool (walker free-list).
+
 ## [Unreleased] — Horde Performance Architecture (foundational)
 
 > Cross-cutting architecture work (ARCH_PLAN.md), off the linear milestone

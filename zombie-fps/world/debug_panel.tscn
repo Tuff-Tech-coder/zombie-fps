@@ -10,13 +10,13 @@ roughness = 0.8
 
 [sub_resource type="BoxMesh" id="board_mesh"]
 material = SubResource("board_mat")
-size = Vector3(4.9, 1.5, 0.08)
+size = Vector3(5.4, 1.5, 0.08)
 
 [node name="DebugPanel" type="Node3D"]
 script = ExtResource("2_ps")
 
 [node name="Backboard" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.06)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.24, 0, -0.06)
 mesh = SubResource("board_mesh")
 
 [node name="Title" type="Label3D" parent="."]
@@ -25,6 +25,10 @@ text = "— DEBUG —"
 font_size = 56
 outline_size = 12
 modulate = Color(1, 0.7, 0.3, 1)
+
+[node name="SpawnBoss" parent="." instance=ExtResource("1_btn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.64, 0, 0)
+action = "spawn_boss"
 
 [node name="Spawn1" parent="." instance=ExtResource("1_btn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.16, 0, 0)

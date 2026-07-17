@@ -27,10 +27,14 @@ func reserve() -> int:
 func _ready() -> void:
 	assert(data != null, "Weapon requires a WeaponData resource")
 	mag = data.mag_size
+	# Data sound when authored on the .tres, synth placeholder otherwise —
+	# the game stays audible before real files exist (audio-pass rule).
 	if _reload_audio:
-		_reload_audio.stream = PlaceholderSfx.reload_click()
+		_reload_audio.stream = data.reload_sound if data.reload_sound else PlaceholderSfx.reload_click()
+		_reload_audio.bus = AudioManager.SFX_BUS
 	if _dry_audio:
-		_dry_audio.stream = PlaceholderSfx.dry_click()
+		_dry_audio.stream = data.dry_sound if data.dry_sound else PlaceholderSfx.dry_click()
+		_dry_audio.bus = AudioManager.SFX_BUS
 	# Deferred so HUD listeners (siblings in the world scene) exist first.
 	call_deferred("_announce")
 

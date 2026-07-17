@@ -31,7 +31,8 @@ var _cooldown := 0.0
 func _ready() -> void:
 	super()
 	assert(data != null, "TurretGun needs a WeaponData resource")
-	fire_audio.stream = PlaceholderSfx.gunshot()
+	fire_audio.stream = data.fire_sound if data.fire_sound else PlaceholderSfx.gunshot()
+	fire_audio.bus = AudioManager.SFX_BUS
 	flash_timer.timeout.connect(func() -> void: flash.visible = false)
 	_update_status()
 

@@ -5,6 +5,9 @@ extends Node3D
 
 const DECAL_LIFETIME := 6.0
 
+## Assign a real impact file here to replace the synth placeholder.
+@export var impact_sound: AudioStream
+
 var _age := DECAL_LIFETIME
 
 @onready var sparks: CPUParticles3D = $Sparks
@@ -13,7 +16,8 @@ var _age := DECAL_LIFETIME
 
 
 func _ready() -> void:
-	audio.stream = PlaceholderSfx.impact()
+	audio.stream = impact_sound if impact_sound else PlaceholderSfx.impact()
+	audio.bus = AudioManager.SFX_BUS
 	visible = false
 	set_process(false)
 

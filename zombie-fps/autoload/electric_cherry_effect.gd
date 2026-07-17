@@ -58,6 +58,7 @@ func _spawn_fx(pos: Vector3, radius: float) -> void:
 	fx.add_child(sparks)
 	var audio := AudioStreamPlayer3D.new()
 	audio.stream = PlaceholderSfx.impact()
+	audio.bus = AudioManager.SFX_BUS
 	audio.volume_db = -2.0
 	fx.add_child(audio)
 	get_tree().current_scene.add_child(fx)

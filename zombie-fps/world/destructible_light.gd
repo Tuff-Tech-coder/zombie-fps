@@ -3,6 +3,9 @@ extends StaticBody3D
 ## Shootable light (DESIGN_DOC §7): losing it is meant to hurt visibility —
 ## the resulting darkness is part of the tension, so it never comes back on.
 
+## Assign a real glass-break file here to replace the synth placeholder.
+@export var break_sound: AudioStream
+
 var _broken := false
 
 @onready var light: OmniLight3D = $Light
@@ -12,7 +15,8 @@ var _broken := false
 
 
 func _ready() -> void:
-	audio.stream = PlaceholderSfx.impact()
+	audio.stream = break_sound if break_sound else PlaceholderSfx.impact()
+	audio.bus = AudioManager.SFX_BUS
 
 
 func take_hit(_damage: float, _hit_pos: Vector3, _normal: Vector3, _shape_index: int = 0) -> void:

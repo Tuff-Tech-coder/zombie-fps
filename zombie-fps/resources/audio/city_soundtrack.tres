@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MapMusic" format=3 uid="uid://dqckxckx76yts"]
+
+[ext_resource type="AudioStream" path="res://resources/audio/generated/city_combat_loop.res" id="1_8g6vf"]
+[ext_resource type="Script" uid="uid://cus3nptwl8gb6" path="res://audio/map_music.gd" id="1_mm"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/city_combat_loop.res" id="2_lp2ew"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/city_prep_loop.res" id="3_0p7xn"]
+
+[resource]
+script = ExtResource("1_mm")
+prep_track = ExtResource("3_0p7xn")
+combat_track = ExtResource("2_lp2ew")
+boss_track = ExtResource("1_8g6vf")
+crossfade_time = 1.6

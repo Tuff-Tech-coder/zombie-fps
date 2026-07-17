@@ -7,6 +7,7 @@ extends StaticBody3D
 const LABELS := {
 	"spawn_1": "SPAWN 1",
 	"spawn_10": "SPAWN 10",
+	"spawn_boss": "SPAWN BOSS",
 	"infinite_ammo": "INF AMMO",
 	"infinite_health": "INF HP",
 	"enemy_health_bars": "ENEMY HP",
@@ -18,7 +19,7 @@ const LABELS := {
 }
 const TOGGLES := ["infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "perf"]
 
-@export_enum("spawn_1", "spawn_10", "infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "grant", "clear_perks", "perf")
+@export_enum("spawn_1", "spawn_10", "spawn_boss", "infinite_ammo", "infinite_health", "enemy_health_bars", "door", "wave", "grant", "clear_perks", "perf")
 var action := "spawn_1"
 
 var _mat: StandardMaterial3D
@@ -44,6 +45,8 @@ func take_hit(_damage: float, _hit_pos: Vector3, _normal: Vector3, _shape_index:
 			DebugManager.spawn_zombies(1)
 		"spawn_10":
 			DebugManager.spawn_zombies(10)
+		"spawn_boss":
+			DebugManager.spawn_boss()
 		"infinite_ammo", "infinite_health":
 			_lit = DebugManager.toggle_flag(StringName(action))
 		"enemy_health_bars":

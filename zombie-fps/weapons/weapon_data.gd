@@ -17,3 +17,10 @@ extends Resource
 @export var range_meters := 60.0
 @export var recoil_pitch := 0.4     ## camera kick per shot, degrees
 @export var recoil_yaw := 0.15      ## random horizontal jitter, degrees
+
+@export_group("Audio")
+## Real gun sounds are data: assign a file here and it replaces the synth
+## placeholder; leave unset and PlaceholderSfx keeps the gun audible.
+@export var fire_sound: AudioStream
+@export var reload_sound: AudioStream
+@export var dry_sound: AudioStream

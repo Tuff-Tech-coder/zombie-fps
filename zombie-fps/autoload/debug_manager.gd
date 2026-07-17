@@ -8,6 +8,7 @@ extends Node
 signal flags_changed
 
 const DEBUG_ENABLED := true
+const BOSS_SCENE := preload("res://enemies/pumpkin_boss.tscn")
 
 var infinite_ammo := false
 var infinite_health := false
@@ -76,6 +77,23 @@ func spawn_zombies(count: int) -> void:
 		spawned += 1
 	print("[debug] spawned %d zombie(s) — pool active=%d total=%d"
 			% [spawned, EnemyPool.active_count(), EnemyPool.total_count()])
+
+
+## Spawns the map-boss placeholder at the near marker so the boss + its leap
+## are testable before the v0.9.0 encounter exists. Own pool, same 50 cap.
+func spawn_boss() -> void:
+	if not is_enabled():
+		return
+	var points := get_tree().get_nodes_in_group("debug_spawn_point")
+	if points.is_empty():
+		push_warning("No debug_spawn_point markers in scene")
+		return
+	var point: Node3D = points[0]
+	if EnemyPool.acquire(point.global_position, BOSS_SCENE) == null:
+		push_warning("[debug] enemy cap reached (%d)" % EnemyPool.MAX_ENEMIES)
+		return
+	print("[debug] spawned boss — pool active=%d total=%d"
+			% [EnemyPool.active_count(), EnemyPool.total_count()])
 
 
 ## Shortcut past scavenging so crafting is testable in isolation.

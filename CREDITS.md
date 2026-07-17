@@ -7,7 +7,10 @@ logged here (CC-BY requires credit; CC0 is logged for provenance).
 
 | Asset | Author | Source | License | Used for |
 |---|---|---|---|---|
-| Character Pack: Skeletons (`Skeleton_Minion.glb`) | KayKit / Kay Lousberg | github.com/KayKit-Game-Assets | CC0 | Placeholder enemy rig (since v0.3.0; license file alongside the model under `enemies/models/`) |
+| Character Pack: Skeletons (`Skeleton_Minion.glb`) | KayKit / Kay Lousberg | github.com/KayKit-Game-Assets | CC0 | Placeholder enemy rig (v0.3.0 → Mixamo swap; license file alongside the model under `enemies/models/`) |
+| "Romero" character (`romero_tpose.fbx`) | Adobe Mixamo | mixamo.com | Mixamo (royalty-free, embeddable in shipped games) | Standard walker rig (origin note under `enemies/models/romero/`) |
+| "Pumpkinhulk L Shaw" character (`pumpkinhulk_tpose.fbx`) | Adobe Mixamo | mixamo.com | Mixamo (royalty-free, embeddable in shipped games) | Map-boss placeholder rig (origin note under `enemies/models/pumpkinhulk/`) |
+| 7 motion-capture clips (`enemies/models/mixamo_shared/*.fbx`) | Adobe Mixamo | mixamo.com | Mixamo (royalty-free, embeddable in shipped games) | Shared retargeted `AnimationLibrary` for all humanoid enemy rigs (clip list in the folder's origin note) |
 
 ## Original works (no license obligations)
 

@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="DirectorConfig" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="DirectorConfig" format=3 uid="uid://ch4bmeccfhh63"]
 
-[ext_resource type="Script" path="res://autoload/director_config.gd" id="1_dc"]
+[ext_resource type="Script" uid="uid://bhnqc22exppye" path="res://autoload/director_config.gd" id="1_dc"]
 
 [sub_resource type="Curve" id="curve_flat_half"]
 _data = [Vector2(0, 0.5), 0.0, 0.0, 0, 0, Vector2(1, 0.5), 0.0, 0.0, 0, 0]
@@ -8,21 +8,4 @@ point_count = 2
 
 [resource]
 script = ExtResource("1_dc")
-min_spawn_distance = 8.0
-preferred_distance_range = Vector2(10.0, 25.0)
-behind_bias = 0.5
-spawn_jitter = 0.8
-burst_size_range = Vector2i(3, 6)
-burst_marker_stickiness = 0.75
 pressure_curve = SubResource("curve_flat_half")
-interval_relaxed = 1.2
-interval_peak = 0.4
-concurrent_floor_fraction = 0.5
-flank_fraction = 0.25
-flank_distance = 4.0
-ring_radius = 6.0
-ring_spacing_degrees = 24.0
-ring_target_radius = 1.2
-avoidance_enabled = false
-avoidance_radius = 0.5
-avoidance_max_neighbors = 8

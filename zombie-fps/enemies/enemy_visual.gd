@@ -71,20 +71,31 @@ func _ready() -> void:
 
 func play_locomotion() -> void:
 	_playback.start(&"locomotion")
+	_apply_if_throttled()
 
 
 func play_attack() -> void:
 	_playback.start(&"attack")  # start() restarts the swing each call
+	_apply_if_throttled()
 
 
 func play_death() -> void:
 	_playback.start(&"death")
+	_apply_if_throttled()
 
 
 ## Pool re-activation: fresh pose, full animation, visible.
 func reset_visual() -> void:
 	set_lod_level(LOD.FULL, 0.0)
 	_playback.start(&"locomotion")
+
+
+## State switches must land visibly even while LOD-throttled: a PAUSED corpse
+## shows the death pose (not frozen locomotion), a throttled fresh spawn is
+## posed (not Start-node rest). Mirrors the REDUCED manual-advance pattern.
+func _apply_if_throttled() -> void:
+	if _anim_tree != null and not _anim_tree.active:
+		_anim_tree.advance(0.0)
 
 
 # -- LOD execution (decisions come from AnimationLODManager, Phase 2) --------
@@ -99,6 +110,13 @@ func set_lod_level(level: int, update_hz: float) -> void:
 	_update_hz = update_hz
 	_accum = 0.0
 	_anim_tree.active = level == LOD.FULL
+	if level != LOD.FULL:
+		# A demotion can land before the tree's first idle evaluation (fresh
+		# spawn far off-screen): without one forced evaluation the playback
+		# never leaves the state machine's Start node and the skeleton holds
+		# its REST pose — on retargeted rigs, a T-posing glider. A zero-delta
+		# advance pins the current state's actual pose before throttling.
+		_anim_tree.advance(0.0)
 	set_process(level == LOD.REDUCED)
 	model.visible = level != LOD.CULLED
 

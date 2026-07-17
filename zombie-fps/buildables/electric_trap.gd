@@ -32,6 +32,7 @@ var _lamp_mat: StandardMaterial3D
 func _ready() -> void:
 	super()
 	hum.stream = PlaceholderSfx.electric_buzz()
+	hum.bus = AudioManager.SFX_BUS
 	zone.body_entered.connect(_on_body_entered)
 	_lamp_mat = lamp.get_active_material(0).duplicate() as StandardMaterial3D
 	lamp.set_surface_override_material(0, _lamp_mat)

@@ -169,9 +169,12 @@ sensitivity) are `@export` vars on the node — still no magic numbers in method
 - **Staggered navigation**: `EnemyNavManager` (autoload) is the *only* writer of
   `agent.target_position`, repathing `UPDATES_PER_TICK` enemies per physics tick
   round-robin. Enemies read `get_next_path_position()` but never set targets.
-- **`EnemyPool`** (autoload): `acquire(pos)` / `release(enemy)`, hard cap
-  `MAX_ENEMIES = 50` (DESIGN_DOC §3). Pooled nodes live under the autoload and
-  survive scene reloads — restart paths must call `release_all()`.
+- **`EnemyPool`** (autoload): `acquire(pos, scene := ZOMBIE_SCENE)` /
+  `release(enemy)` with one free-list per enemy scene (walker, boss, ...);
+  the hard cap `MAX_ENEMIES = 50` (DESIGN_DOC §3) is global across all
+  free-lists. Callers that don't pass a scene get the standard walker, so
+  `RoundManager` spawning is unchanged. Pooled nodes live under the autoload
+  and survive scene reloads — restart paths must call `release_all()`.
 - Collision layers: 1 = world, 2 = player, 3 = enemy, 4 = interactable. Weapon
   rays exclude the wielder and hit everything else.
 
@@ -203,8 +206,26 @@ the scene's `Visual` node), and swapping the whole rig is a resource-only change
     `import_as_skeleton_bones = true`, assign a **BoneMap** built against
     `SkeletonProfileHumanoid`, reimport; author the shared library once (retarget a
     clip set through the same profile) and assign it to `animation_library`. One
-    library then drives every humanoid rig. (Current placeholder uses bundled mode;
-    `Skeleton_Minion.glb.import` intentionally has `import_as_skeleton_bones=false`.)
+    library then drives every humanoid rig. (The KayKit placeholder used bundled
+    mode; since the Mixamo swap both enemy rigs are retargeted.)
+  - *Mixamo specifics* (learned on Romero/Pumpkinhulk): bone prefixes differ
+    per character export (`mixamorig_*` vs `mixamorig5_*`) and FBX import
+    sanitizes `:` to `_` — hence TWO BoneMaps in `enemies/models/mixamo_shared/`
+    (`mixamo_bone_map.tres`, `mixamo_bone_map_r5.tres`); check `get_bone_name(0)`
+    on a new import and pick/author the map to match. The editor does NOT
+    reimport when only a `.import` file changes externally — touch the source
+    FBX's mtime, then `EditorFileSystem.scan()`. Mixamo's **In Place** export
+    option does NOT reliably strip root motion — pin each locomotion clip's
+    Hips position track to first-frame X/Z (keep the Y bob) or the visual
+    sawtooths off its collider. The shared library is `zombie_shared_anims.res`,
+    rebuilt by loading each clip FBX, `duplicate()` on the animation, pinning
+    locomotion Hips X/Z, then `compress()` + `add_animation()` + save.
+    Retargeted rigs face **+Z** after profile normalization, and `Enemy._face`
+    (`atan2(dir.x, dir.z)`) aims the body's **+Z** at the movement direction —
+    so retargeted `Model` nodes need NO rotation (a 180° Y flip makes them
+    walk backwards). LOD gotcha: a spawn demoted before its AnimationTree's
+    first evaluation freezes at the REST pose (a T-pose on retargeted rigs) —
+    `EnemyVisual` forces a zero-delta `advance()` on throttled transitions.
 
 ### Animation-LOD framework (Phase 2)
 
@@ -415,11 +436,44 @@ established manager precedent — no new EventBus signals
   under `Visuals/`, with proxy and visual surfaces authored to coincide so
   bullet impacts land on the visible faces.
 
+## Audio (v0.8.1, off-roadmap patch)
+
+- **Buses** (`default_bus_layout.tres`): `Master ← Music`, `Master ← SFX`.
+  Every world/weapon/enemy player routes to **SFX** (`AudioManager.SFX_BUS`,
+  never a bare string); only AudioManager's two music players sit on Music.
+- **`AudioManager`** (autoload) owns music: two crossfading players, phases
+  driven by EventBus signals — level load → prep track (also the free-fire
+  default), `round_started` → combat, `round_cleared` → prep,
+  `player_died` → fade-out + optional stinger. `map_cleared`/`boss_track`
+  is a RESERVED seam for the v0.9.0 boss. An unassigned track for a phase
+  is silence — never an error.
+- **Per-map soundtracks (the contract)**: each map authors a **`MapMusic`**
+  .tres (`audio/map_music.gd` schema → `resources/audio/<map>_soundtrack.tres`)
+  and declares it on its **`Level`** root (`world/level.gd`, `@export
+  soundtrack`; assign in the scene like greybox, or preload-in-code like
+  `city.gd`). `Level._ready` hands it to `AudioManager.set_soundtrack()` —
+  the manager stays completely map-agnostic, so a new map's music is a new
+  .tres, never an AudioManager edit.
+- **Weapon SFX are data**: `WeaponData.fire_sound/reload_sound/dry_sound` —
+  assign a file in the gun's .tres to replace the synth placeholder;
+  unset falls back to `PlaceholderSfx` (the game must stay audible with
+  zero assets — the placeholder-fallback rule). Same pattern on
+  `ImpactEffect.impact_sound` and `DestructibleLight.break_sound`.
+- **Enemy vocals are data**: `Enemy.chase_sound/attack_sound/death_sound`
+  play on the scene's optional `Sfx` (AudioStreamPlayer3D, SFX bus) at the
+  AI transitions; unset = silent. Both enemy scenes ship with the generated
+  placeholder set assigned (boss reuses it at `pitch_scale 0.65`).
+- **Generated placeholder assets**: `audio/_sfx_bake.gd` (headless one-shot,
+  mirrors the texture bake) renders the music loops / stinger / vocal set to
+  `resources/audio/generated/*.res` — committed, deterministic, replaced by
+  swapping .tres references to real CC0 files (DESIGN_DOC §10).
+
 ## Placeholders
 
-- Audio is synthesized at load time by `weapons/placeholder_sfx.gd` so the repo
-  ships zero binary sound assets pre-art-pass. Replace wholesale during the asset
-  pass with sources from DESIGN_DOC §10.
+- Audio is synthesized at load time by `weapons/placeholder_sfx.gd` (per-shot
+  blips) and pre-baked by `audio/_sfx_bake.gd` (music/vocals) so the repo
+  ships no third-party sound assets pre-art-pass. Real files land as .tres
+  assignments (see Audio) with sources from DESIGN_DOC §10.
 - HUD styling is intentionally raw; the bottom-left `PerkArea` region is reserved
   for the v0.6.0 perk icons.
 

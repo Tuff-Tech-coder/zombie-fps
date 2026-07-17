@@ -1,0 +1,70 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://enemies/pumpkin_boss.gd" id="1_pb"]
+[ext_resource type="Script" path="res://enemies/enemy_visual.gd" id="2_ev"]
+[ext_resource type="PackedScene" path="res://enemies/models/skeleton_minion/Skeleton_Minion.glb" id="3_model"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/zombie_groan.res" id="5_groan"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/zombie_snarl.res" id="6_snarl"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/zombie_gurgle.res" id="7_gurgle"]
+
+[sub_resource type="CapsuleShape3D" id="body_capsule"]
+radius = 0.6
+height = 2.4
+
+[sub_resource type="SphereShape3D" id="head_sphere"]
+radius = 0.5
+
+[node name="PumpkinBoss" type="CharacterBody3D"]
+collision_layer = 4
+collision_mask = 7
+script = ExtResource("1_pb")
+max_health = 450.0
+move_speed = 3.2
+turn_speed = 5.0
+attack_damage = 30.0
+attack_range = 2.4
+attack_duration = 2.0
+attack_hit_time = 1.0
+death_duration = 4.6
+chase_sound = ExtResource("5_groan")
+attack_sound = ExtResource("6_snarl")
+death_sound = ExtResource("7_gurgle")
+
+[node name="BodyShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+shape = SubResource("body_capsule")
+
+[node name="HeadShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 2.15, -0.55)
+shape = SubResource("head_sphere")
+
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("2_ev")
+locomotion_clip = &"Walking_D_Skeletons"
+attack_clip = &"Unarmed_Melee_Attack_Punch_A"
+death_clip = &"Death_A"
+
+[node name="Model" parent="Visual" instance=ExtResource("3_model")]
+transform = Transform3D(1.4, 0, 0, 0, 1.4, 0, 0, 0, 1.4, 0, 0, 0)
+
+[node name="Sfx" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+bus = &"SFX"
+max_distance = 50.0
+pitch_scale = 0.65
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.6
+target_desired_distance = 1.0
+radius = 0.7
+height = 2.9
+
+[node name="HealthLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 0)
+visible = false
+billboard = 1
+modulate = Color(1, 0.35, 0.25, 1)
+outline_modulate = Color(0, 0, 0, 0.8)
+text = "450"
+font_size = 64
+outline_size = 16
