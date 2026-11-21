@@ -18,7 +18,7 @@ The Godot project lives in `zombie-fps/`. Top-level folders:
 | `ui/` | HUD, overlays (film grain, game over), future menus |
 | `resources/` | **Data only** — authored `.tres` files, grouped by domain (`resources/weapons/`, later `resources/perks/`, `resources/formulas/`) |
 
-Docs (`DESIGN_DOC.md`, `CODE_GUIDE.md`, `CHANGELOG.md`) live at the repo root, one
+Docs (`DESIGN_DOC.md`, `CODE_GUIDE.md`, `CHANGELOG.md`, ...) live in `docs/` at the repo root, one
 level above the Godot project.
 
 ## Naming
