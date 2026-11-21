@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://world/build_spot.gd" id="1_bs"]
+
+[sub_resource type="BoxShape3D" id="spot_shape"]
+size = Vector3(0.7, 1.2, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="mat_ghost"]
+transparency = 1
+albedo_color = Color(0.4, 0.8, 1, 0.22)
+emission_enabled = true
+emission = Color(0.4, 0.8, 1, 1)
+emission_energy_multiplier = 0.3
+
+[sub_resource type="BoxMesh" id="mesh_ghost"]
+material = SubResource("mat_ghost")
+size = Vector3(0.5, 1.05, 0.5)
+
+[node name="BuildSpot" type="StaticBody3D"]
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("1_bs")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("spot_shape")
+
+[node name="Ghost" type="Node3D" parent="."]
+
+[node name="GhostMesh" type="MeshInstance3D" parent="Ghost"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.525, 0)
+cast_shadow = 0
+mesh = SubResource("mesh_ghost")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+billboard = 1
+modulate = Color(0.5, 0.85, 1, 1)
+text = "Build"
+font_size = 36
+outline_size = 8

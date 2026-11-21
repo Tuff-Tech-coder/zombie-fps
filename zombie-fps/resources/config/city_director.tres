@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="DirectorConfig" format=3 uid="uid://3stulf3fkvo8"]
+
+[ext_resource type="Script" uid="uid://bhnqc22exppye" path="res://autoload/director_config.gd" id="1_dc"]
+
+[sub_resource type="Curve" id="curve_city_ramp"]
+_data = [Vector2(0, 0.2), 0.0, 0.35, 0, 0, Vector2(0.55, 0.5), 0.6, 0.6, 0, 0, Vector2(1, 1), 1.4, 0.0, 0, 0]
+point_count = 3
+
+[resource]
+script = ExtResource("1_dc")
+min_spawn_distance = 10.0
+preferred_distance_range = Vector2(14, 32)
+spawn_jitter = 0.7
+burst_size_range = Vector2i(4, 8)
+burst_marker_stickiness = 0.8
+pressure_curve = SubResource("curve_city_ramp")
+interval_relaxed = 1.4
+interval_peak = 0.45
+concurrent_floor_fraction = 0.4

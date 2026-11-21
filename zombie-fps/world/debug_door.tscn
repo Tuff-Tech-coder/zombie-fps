@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://world/debug_door.gd" id="1_dd"]
+
+[sub_resource type="BoxShape3D" id="door_shape"]
+size = Vector3(3, 3, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="door_mat"]
+albedo_color = Color(0.25, 0.22, 0.18, 1)
+metallic = 0.6
+roughness = 0.55
+
+[sub_resource type="BoxMesh" id="door_mesh"]
+material = SubResource("door_mat")
+size = Vector3(3, 3, 0.3)
+
+[node name="DebugDoor" type="AnimatableBody3D" groups=["debug_door"]]
+sync_to_physics = true
+script = ExtResource("1_dd")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("door_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("door_mesh")
+
+[node name="Sign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0.17)
+text = "DEBUG ROOM"
+font_size = 48
+outline_size = 12
+modulate = Color(1, 0.7, 0.3, 1)

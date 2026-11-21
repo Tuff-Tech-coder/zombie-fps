@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://world/recipe_note.gd" id="1_rn"]
+
+[sub_resource type="BoxShape3D" id="note_shape"]
+size = Vector3(0.5, 0.4, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="mat_paper"]
+albedo_color = Color(0.9, 0.87, 0.75, 1)
+emission_enabled = true
+emission = Color(0.9, 0.87, 0.75, 1)
+emission_energy_multiplier = 0.35
+
+[sub_resource type="BoxMesh" id="mesh_paper"]
+material = SubResource("mat_paper")
+size = Vector3(0.24, 0.01, 0.32)
+
+[node name="RecipeNote" type="StaticBody3D"]
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("1_rn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("note_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.939693, 0, -0.34202, 0, 1, 0, 0.34202, 0, 0.939693, 0, 0.02, 0)
+mesh = SubResource("mesh_paper")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+billboard = 1
+modulate = Color(0.95, 0.9, 0.7, 1)
+text = "Note"
+font_size = 30
+outline_size = 8

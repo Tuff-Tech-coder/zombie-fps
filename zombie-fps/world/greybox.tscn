@@ -1,0 +1,721 @@
+[gd_scene format=3 uid="uid://dxmei6a7no4n0"]
+
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="1_pl"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" path="res://ui/film_grain.tscn" id="3_fg"]
+[ext_resource type="PackedScene" path="res://world/shooting_target.tscn" id="4_tg"]
+[ext_resource type="PackedScene" path="res://world/destructible_light.tscn" id="5_dl"]
+[ext_resource type="Script" uid="uid://rj44jtosmg31" path="res://world/nav_region.gd" id="6_nav"]
+[ext_resource type="PackedScene" path="res://world/debug_door.tscn" id="7_dd"]
+[ext_resource type="PackedScene" path="res://world/debug_panel.tscn" id="8_dp"]
+[ext_resource type="PackedScene" path="res://ui/game_over.tscn" id="9_go"]
+[ext_resource type="PackedScene" path="res://world/pickup.tscn" id="10_pk"]
+[ext_resource type="PackedScene" path="res://world/build_spot.tscn" id="11_bs"]
+[ext_resource type="Resource" path="res://resources/items/scrap.tres" id="12_scrap"]
+[ext_resource type="Resource" path="res://resources/items/servo.tres" id="13_servo"]
+[ext_resource type="Resource" path="res://resources/items/ammo_9mm.tres" id="14_9mm"]
+[ext_resource type="Resource" path="res://resources/recipes/auto_turret.tres" id="15_rcp"]
+[ext_resource type="Resource" path="res://resources/recipes/manual_turret.tres" id="16_mtr"]
+[ext_resource type="Resource" path="res://resources/recipes/electric_trap.tres" id="17_etr"]
+[ext_resource type="Resource" path="res://resources/items/coil.tres" id="18_coil"]
+[ext_resource type="Resource" path="res://resources/items/ammo_762.tres" id="19_762"]
+[ext_resource type="PackedScene" path="res://world/crafting_bench.tscn" id="20_bench"]
+[ext_resource type="PackedScene" path="res://ui/crafting_ui.tscn" id="21_cui"]
+[ext_resource type="PackedScene" path="res://world/recipe_note.tscn" id="22_note"]
+[ext_resource type="Resource" path="res://resources/recipes/lab.tres" id="23_lab"]
+[ext_resource type="Resource" path="res://resources/recipes/burner.tres" id="24_brn"]
+[ext_resource type="Resource" path="res://resources/perks/recipe_electric_cherry.tres" id="25_ecr"]
+[ext_resource type="Resource" path="res://resources/items/caffeine.tres" id="26_caf"]
+[ext_resource type="Resource" path="res://resources/items/taurine.tres" id="27_tau"]
+[ext_resource type="Resource" path="res://resources/items/cordite.tres" id="28_cor"]
+[ext_resource type="Resource" path="res://resources/items/retinol.tres" id="29_ret"]
+[ext_resource type="Resource" path="res://resources/items/ethanol.tres" id="30_eth"]
+[ext_resource type="Resource" path="res://resources/items/cherry_extract.tres" id="31_che"]
+[ext_resource type="Resource" path="res://resources/items/electrolytes.tres" id="32_ele"]
+[ext_resource type="Script" uid="uid://bvj4leahei22m" path="res://world/level.gd" id="33_lvl"]
+[ext_resource type="Resource" uid="uid://b8acq57cs4g4u" path="res://resources/audio/greybox_soundtrack.tres" id="34_snd"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.015, 0.018, 0.024, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.36, 0.43, 0.52, 1)
+ambient_light_energy = 0.22
+tonemap_mode = 2
+tonemap_white = 6.0
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.5
+glow_enabled = true
+glow_intensity = 0.35
+glow_strength = 0.95
+glow_hdr_threshold = 1.3
+fog_enabled = true
+fog_light_color = Color(0.16, 0.19, 0.23, 1)
+fog_light_energy = 0.8
+fog_density = 0.045
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.035
+volumetric_fog_albedo = Color(0.55, 0.62, 0.7, 1)
+volumetric_fog_anisotropy = 0.25
+volumetric_fog_ambient_inject = 0.15
+adjustment_enabled = true
+adjustment_brightness = 0.97
+adjustment_contrast = 1.12
+adjustment_saturation = 0.65
+
+[sub_resource type="NavigationMesh" id="navmesh"]
+geometry_parsed_geometry_type = 1
+agent_height = 2.0
+agent_radius = 0.45
+
+[sub_resource type="StandardMaterial3D" id="mat_floor"]
+albedo_color = Color(0.2, 0.21, 0.22, 1)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.27, 0.28, 0.3, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="mat_crate"]
+albedo_color = Color(0.3, 0.26, 0.22, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="mat_fixture"]
+albedo_color = Color(0.1, 0.1, 0.11, 1)
+metallic = 0.3
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="mesh_fixture"]
+material = SubResource("mat_fixture")
+size = Vector3(0.32, 0.1, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="mat_bulb"]
+albedo_color = Color(1, 0.85, 0.6, 1)
+emission_enabled = true
+emission = Color(1, 0.75, 0.5, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="SphereMesh" id="mesh_bulb"]
+material = SubResource("mat_bulb")
+radius = 0.07
+height = 0.14
+
+[node name="Greybox" type="Node3D" unique_id=1640031346]
+script = ExtResource("33_lvl")
+soundtrack = ExtResource("34_snd")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1478146681]
+environment = SubResource("env")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1098122780]
+navigation_mesh = SubResource("navmesh")
+script = ExtResource("6_nav")
+
+[node name="Geometry" type="Node3D" parent="NavigationRegion3D" unique_id=326067290]
+
+[node name="FloorA" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=296240924]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+use_collision = true
+size = Vector3(17, 0.5, 11)
+material = SubResource("mat_floor")
+
+[node name="FloorCorridor" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1761123072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, -0.25, 0)
+use_collision = true
+size = Vector3(8, 0.5, 4)
+material = SubResource("mat_floor")
+
+[node name="FloorB" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1858801648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, -0.25, 0)
+use_collision = true
+size = Vector3(11, 0.5, 11)
+material = SubResource("mat_floor")
+
+[node name="FloorB2" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1210082526]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.987164, -0.26933527, 33.99492)
+use_collision = true
+size = Vector3(11, 0.5, 57.47693)
+material = SubResource("mat_floor")
+
+[node name="FloorDebug" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1371043421]
+transform = Transform3D(1.4739952, 0, 0, 0, 1, 0, 0, 0, 1.3479154, 21, -0.25, -15.5)
+use_collision = true
+size = Vector3(20, 0.5, 20)
+material = SubResource("mat_floor")
+
+[node name="CeilingA" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=600738674]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.25, 0)
+use_collision = true
+size = Vector3(17, 0.5, 11)
+material = SubResource("mat_wall")
+
+[node name="CeilingCorridor" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1968843540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 4.25, 0)
+use_collision = true
+size = Vector3(8, 0.5, 4)
+material = SubResource("mat_wall")
+
+[node name="CeilingB" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1667860448]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 4.25, 0)
+use_collision = true
+size = Vector3(11, 0.5, 11)
+material = SubResource("mat_wall")
+
+[node name="CeilingDebug" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1609403560]
+transform = Transform3D(1.4684944, 0, 0, 0, 1, 0, 0, 0, 1.354476, 21, 4.25, -15.5)
+use_collision = true
+size = Vector3(20, 0.5, 20)
+material = SubResource("mat_wall")
+
+[node name="WallANorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=334515857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5.25)
+use_collision = true
+size = Vector3(17, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallANorth2" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=290925583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.800007, 2, 58.988087)
+use_collision = true
+size = Vector3(17, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallASouth" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=269025921]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5.25)
+use_collision = true
+size = Vector3(17, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallAWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=288644081]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.25, 2, 0)
+use_collision = true
+size = Vector3(0.5, 4, 10)
+material = SubResource("mat_wall")
+
+[node name="WallAEastN" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=2040069799]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 2, -3.25)
+use_collision = true
+size = Vector3(0.5, 4, 3.5)
+material = SubResource("mat_wall")
+
+[node name="WallAEastS" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=485116687]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 2, 3.25)
+use_collision = true
+size = Vector3(0.5, 4, 3.5)
+material = SubResource("mat_wall")
+
+[node name="WallCorridorN" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1436040219]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, -1.75)
+use_collision = true
+size = Vector3(8, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallCorridorS" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1015779259]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 1.75)
+use_collision = true
+size = Vector3(8, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallBNorthLeft" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=2131642152]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.5, 2, -5.25)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallBNorthRight" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=397498593]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 2, -5.25)
+use_collision = true
+size = Vector3(4, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="DoorHeader" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=234329181]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.5, -5.25)
+use_collision = true
+size = Vector3(3, 1, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallBEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=564383935]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.25, 2, 0)
+use_collision = true
+size = Vector3(0.5, 4, 10)
+material = SubResource("mat_wall")
+
+[node name="WallBEast2" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=786275647]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.25, 2, 32.239555)
+use_collision = true
+size = Vector3(0.5, 4, 54.537323)
+material = SubResource("mat_wall")
+
+[node name="WallBEast3" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1559065635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.70632, 2, 32.239555)
+use_collision = true
+size = Vector3(0.5, 4, 54.537323)
+material = SubResource("mat_wall")
+
+[node name="WallBWestN" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=312730296]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.75, 2, -3.25)
+use_collision = true
+size = Vector3(0.5, 4, 3.5)
+material = SubResource("mat_wall")
+
+[node name="WallBWestS" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1432211482]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.75, 2, 3.25)
+use_collision = true
+size = Vector3(0.5, 4, 3.5)
+material = SubResource("mat_wall")
+
+[node name="WallDebugWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=345181703]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.4273275, 6.2477684, 2, -15.5)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("mat_wall")
+
+[node name="WallDebugEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=318589351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.4819674, 33.7184, 2, -15.5)
+use_collision = true
+size = Vector3(0.5, 4, 20)
+material = SubResource("mat_wall")
+
+[node name="WallDebugNorth" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=787448896]
+transform = Transform3D(1.4436953, 0, 0, 0, 1, 0, 0, 0, 1, 21, 2, -29.020641)
+use_collision = true
+size = Vector3(21, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallDebugSouthWest" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=256341491]
+transform = Transform3D(1.8355585, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, -5.25)
+use_collision = true
+size = Vector3(5, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="WallDebugSouthEast" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1131012386]
+transform = Transform3D(1.9068384, 0, 0, 0, 1, 0, 0, 0, 1, 29, 2, -5.25)
+use_collision = true
+size = Vector3(5, 4, 0.5)
+material = SubResource("mat_wall")
+
+[node name="Crate1" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1945807715]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 2.5)
+use_collision = true
+material = SubResource("mat_crate")
+
+[node name="Crate2" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=2000948602]
+transform = Transform3D(0.939693, 0, -0.34202, 0, 1, 0, 0.34202, 0, 0.939693, -2.5, 1.5, 2.5)
+use_collision = true
+material = SubResource("mat_crate")
+
+[node name="Crate3" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=440506625]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, -2.8)
+use_collision = true
+material = SubResource("mat_crate")
+
+[node name="CoverWall" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=2087455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.55, 1.8)
+use_collision = true
+size = Vector3(2.5, 1.1, 0.6)
+material = SubResource("mat_wall")
+
+[node name="PillarB1" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=1204894182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5, 2, -2.5)
+use_collision = true
+size = Vector3(0.8, 4, 0.8)
+material = SubResource("mat_wall")
+
+[node name="PillarB2" type="CSGBox3D" parent="NavigationRegion3D/Geometry" unique_id=405275011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.724024, 2, 3.824901)
+use_collision = true
+size = Vector3(0.8, 4, 0.8)
+material = SubResource("mat_wall")
+
+[node name="Lights" type="Node3D" parent="." unique_id=1131243299]
+
+[node name="LampA" type="Node3D" parent="Lights" unique_id=730360581]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.9, 0)
+
+[node name="Fixture" type="MeshInstance3D" parent="Lights/LampA" unique_id=1762785287]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="Lights/LampA" unique_id=120002172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="Lights/LampA" unique_id=1125856027]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="LampB" type="Node3D" parent="Lights" unique_id=625731157]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 3.9, 0)
+
+[node name="Fixture" type="MeshInstance3D" parent="Lights/LampB" unique_id=1096504031]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="Lights/LampB" unique_id=1566440208]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="Lights/LampB" unique_id=1206316533]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="LampDebugA" type="Node3D" parent="Lights" unique_id=1149570412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 3.9, -11)
+
+[node name="Fixture" type="MeshInstance3D" parent="Lights/LampDebugA" unique_id=1813545948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="Lights/LampDebugA" unique_id=380387276]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="Lights/LampDebugA" unique_id=397674462]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light2" type="OmniLight3D" parent="Lights/LampDebugA" unique_id=391379455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light3" type="OmniLight3D" parent="Lights/LampDebugA" unique_id=1523955872]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="LampDebugB" type="Node3D" parent="Lights" unique_id=2054667722]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 3.9, -20)
+
+[node name="Fixture" type="MeshInstance3D" parent="Lights/LampDebugB" unique_id=650811532]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("mesh_fixture")
+
+[node name="Bulb" type="MeshInstance3D" parent="Lights/LampDebugB" unique_id=1313254251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+mesh = SubResource("mesh_bulb")
+
+[node name="Light" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=602707688]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light17" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1951841955]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4000001, -5.0581055)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light18" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1842623381]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4000001, -5.0581055)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light19" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=571907521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.17421, -0.4000001, -6.003439)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light20" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1698738171]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.17421, -0.4000001, -6.003439)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light22" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=503087100]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.582073, -0.4000001, 5.1479416)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light21" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1940307213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.17421, -0.4000001, -6.003439)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light15" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=2041682760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5991783, -0.4000001, 9.310566)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light16" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=892762121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5991783, -0.4000001, 9.310566)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light10" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=2058824154]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light11" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1417885500]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light12" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=184821366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.564746, -0.4000001, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light13" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1878244003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.564746, -0.4000001, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light14" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=758895480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.564746, -0.4000001, 0)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light2" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=619227760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.546255, -0.4000001, 32.492535)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light3" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=315184168]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.723835, -0.4000001, 50.771023)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light7" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=790771745]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.723835, -0.4000001, 40.248108)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light8" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1205188725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.723835, -0.4000001, 45.994946)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light9" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=27078417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.723835, -0.4000001, 58.61522)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light4" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=2004963966]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.593464, -0.4000001, 74.8079)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light5" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=961580544]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.942152, -0.4000001, 66.10033)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="Light6" type="OmniLight3D" parent="Lights/LampDebugB" unique_id=1007796604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2704487, -0.4000001, 57.028595)
+light_color = Color(1, 0.72, 0.45, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 10.0
+
+[node name="CorridorLight" parent="Lights" unique_id=2135313767 instance=ExtResource("5_dl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 3.8, 0)
+
+[node name="Targets" type="Node3D" parent="." unique_id=1591585974]
+
+[node name="TargetA" parent="Targets" unique_id=1668057033 instance=ExtResource("4_tg")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 6.5, 0, -4)
+
+[node name="TargetB1" parent="Targets" unique_id=350300401 instance=ExtResource("4_tg")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 24.8, 0, -3)
+
+[node name="TargetB3" parent="Targets" unique_id=1467749833 instance=ExtResource("4_tg")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 24.8, 0, 3)
+
+[node name="DebugDoor" parent="." unique_id=1673903784 instance=ExtResource("7_dd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 1.5, -5.25)
+
+[node name="DebugPanel" parent="." unique_id=533609659 instance=ExtResource("8_dp")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 25.900705, 1.4999998, 0.0045175552)
+
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=1159456315]
+
+[node name="SpawnPoint1" type="Marker3D" parent="SpawnPoints" unique_id=233822026 groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0.1, -1)
+
+[node name="SpawnPoint2" type="Marker3D" parent="SpawnPoints" unique_id=185878457 groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.1, -12)
+
+[node name="SpawnPoint3" type="Marker3D" parent="SpawnPoints" unique_id=144608782 groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0.1, -12)
+
+[node name="SpawnPoint4" type="Marker3D" parent="SpawnPoints" unique_id=1380815238 groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.1, -21)
+
+[node name="SpawnPoint5" type="Marker3D" parent="SpawnPoints" unique_id=597200809 groups=["debug_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0.1, -21)
+
+[node name="RoundSpawnB1" type="Marker3D" parent="SpawnPoints" unique_id=1644994949 groups=["enemy_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 0.1, -3.5)
+
+[node name="RoundSpawnB2" type="Marker3D" parent="SpawnPoints" unique_id=1013850722 groups=["enemy_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 0.1, 3.5)
+
+[node name="RoundSpawnCorridor" type="Marker3D" parent="SpawnPoints" unique_id=1588414638 groups=["enemy_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 0.1, 0)
+
+[node name="RoundSpawnA" type="Marker3D" parent="SpawnPoints" unique_id=1223107468 groups=["enemy_spawn_point"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.1, 4)
+
+[node name="Player" parent="." unique_id=1082663260 instance=ExtResource("1_pl")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -6, 0.1, 0)
+
+[node name="FilmGrain" parent="." unique_id=1271982246 instance=ExtResource("3_fg")]
+
+[node name="HUD" parent="." unique_id=176900349 instance=ExtResource("2_hud")]
+
+[node name="GameOver" parent="." unique_id=1856714290 instance=ExtResource("9_go")]
+
+[node name="Scavenge" type="Node3D" parent="." unique_id=779916700]
+
+[node name="PickupScrap1" parent="Scavenge" unique_id=1643614007 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.35, -2)
+item = ExtResource("12_scrap")
+quantity = 2
+
+[node name="PickupScrap2" parent="Scavenge" unique_id=2070192472 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.35, 3.2)
+item = ExtResource("12_scrap")
+quantity = 2
+
+[node name="PickupServo" parent="Scavenge" unique_id=2025458264 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 0.35, 3.4)
+item = ExtResource("13_servo")
+
+[node name="PickupAmmo1" parent="Scavenge" unique_id=1868872447 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.35, 0.8)
+item = ExtResource("14_9mm")
+quantity = 30
+
+[node name="PickupAmmo2" parent="Scavenge" unique_id=259879157 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0.35, 3)
+item = ExtResource("14_9mm")
+quantity = 30
+
+[node name="TurretSpot" parent="Scavenge" unique_id=1976487967 instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5, 0, 0.5)
+recipe = ExtResource("15_rcp")
+
+[node name="MGSpot" parent="Scavenge" unique_id=2132397420 instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, 2.8)
+recipe = ExtResource("16_mtr")
+
+[node name="TrapSpot" parent="Scavenge" unique_id=1260954571 instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -1.15)
+recipe = ExtResource("17_etr")
+
+[node name="PickupCoil" parent="Scavenge" unique_id=554309028 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0.35, 1)
+item = ExtResource("18_coil")
+quantity = 2
+
+[node name="PickupScrap3" parent="Scavenge" unique_id=1302476685 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.5, 0.35, -4)
+item = ExtResource("12_scrap")
+quantity = 4
+
+[node name="PickupAmmo762" parent="Scavenge" unique_id=113676649 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0.35, 2.2)
+item = ExtResource("19_762")
+quantity = 150
+
+[node name="CraftingBench" parent="Scavenge" unique_id=225198674 instance=ExtResource("20_bench")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 3.8)
+
+[node name="LabSpot" parent="Scavenge" unique_id=891277121 instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, -2)
+recipe = ExtResource("23_lab")
+
+[node name="BurnerSpot" parent="Scavenge" unique_id=1954268769 instance=ExtResource("11_bs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 4.3)
+recipe = ExtResource("24_brn")
+
+[node name="CherryNote" parent="Scavenge" unique_id=893018719 instance=ExtResource("22_note")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.3, 4)
+recipe = ExtResource("25_ecr")
+
+[node name="PickupCaffeine" parent="Scavenge" unique_id=450375297 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.35, -3.5)
+item = ExtResource("26_caf")
+quantity = 3
+
+[node name="PickupTaurine" parent="Scavenge" unique_id=2049186464 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.35, -4.3)
+item = ExtResource("27_tau")
+
+[node name="PickupCordite" parent="Scavenge" unique_id=469394504 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.35, 3.5)
+item = ExtResource("28_cor")
+
+[node name="PickupRetinol" parent="Scavenge" unique_id=1922572117 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.35, -1)
+item = ExtResource("29_ret")
+quantity = 2
+
+[node name="PickupEthanol" parent="Scavenge" unique_id=404179331 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0.35, -1)
+item = ExtResource("30_eth")
+
+[node name="PickupCherryExtract" parent="Scavenge" unique_id=447684839 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0.35, -4.2)
+item = ExtResource("31_che")
+quantity = 2
+
+[node name="PickupElectrolytes" parent="Scavenge" unique_id=35383177 instance=ExtResource("10_pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.35, 0.5)
+item = ExtResource("32_ele")
+
+[node name="CraftingUI" parent="." unique_id=1490390266 instance=ExtResource("21_cui")]

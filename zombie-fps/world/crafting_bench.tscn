@@ -1,0 +1,58 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://world/crafting_station.gd" id="1_cs"]
+
+[sub_resource type="BoxShape3D" id="bench_shape"]
+size = Vector3(1.4, 1.1, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="mat_wood"]
+albedo_color = Color(0.32, 0.24, 0.16, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="mesh_top"]
+material = SubResource("mat_wood")
+size = Vector3(1.4, 0.08, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="mat_leg"]
+albedo_color = Color(0.2, 0.16, 0.12, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="mesh_leg"]
+material = SubResource("mat_leg")
+size = Vector3(0.1, 0.9, 0.1)
+
+[node name="CraftingBench" type="StaticBody3D"]
+script = ExtResource("1_cs")
+tier = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("bench_shape")
+
+[node name="Top" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("mesh_top")
+
+[node name="LegA" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.45, -0.3)
+mesh = SubResource("mesh_leg")
+
+[node name="LegB" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.45, -0.3)
+mesh = SubResource("mesh_leg")
+
+[node name="LegC" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.45, 0.3)
+mesh = SubResource("mesh_leg")
+
+[node name="LegD" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.45, 0.3)
+mesh = SubResource("mesh_leg")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+billboard = 1
+modulate = Color(0.85, 0.75, 0.55, 1)
+text = "BENCH"
+font_size = 36
+outline_size = 8

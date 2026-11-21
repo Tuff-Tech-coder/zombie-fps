@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://7u4m52cm0snr"]
+
+[ext_resource type="Script" uid="uid://cbjq4hlyp2h2c" path="res://world/debug_button.gd" id="1_db"]
+
+[sub_resource type="BoxShape3D" id="btn_shape"]
+size = Vector3(0.44, 0.44, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="btn_mat"]
+albedo_color = Color(0.16, 0.16, 0.17, 1)
+metallic = 0.2
+roughness = 0.6
+emission_enabled = true
+emission = Color(0.9, 0.15, 0.1, 1)
+emission_energy_multiplier = 0.25
+
+[sub_resource type="BoxMesh" id="btn_mesh"]
+material = SubResource("btn_mat")
+size = Vector3(0.44, 0.44, 0.1)
+
+[node name="DebugButton" type="StaticBody3D" unique_id=566832245]
+script = ExtResource("1_db")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=112878031]
+shape = SubResource("btn_shape")
+
+[node name="Plate" type="MeshInstance3D" parent="." unique_id=402841614]
+mesh = SubResource("btn_mesh")
+
+[node name="Label" type="Label3D" parent="." unique_id=1290257812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.34, 0.06)
+pixel_size = 0.0018
+text = "BUTTON"
+font_size = 40
+outline_size = 10

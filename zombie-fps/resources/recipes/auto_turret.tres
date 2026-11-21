@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="BuildRecipe" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://buildables/build_recipe.gd" id="1_br"]
+[ext_resource type="PackedScene" path="res://buildables/auto_turret.tscn" id="2_sc"]
+
+[resource]
+script = ExtResource("1_br")
+display_name = "Auto Turret"
+inputs = Array[Dictionary]([{
+"id": &"scrap",
+"qty": 4
+}, {
+"id": &"servo",
+"qty": 1
+}])
+buildable_scene = ExtResource("2_sc")

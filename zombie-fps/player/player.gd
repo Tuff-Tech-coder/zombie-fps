@@ -1,0 +1,349 @@
+class_name Player
+extends CharacterBody3D
+## First-person controller: movement, look, and fire *input* only. All gun
+## behavior lives on the equipped Weapon (first child of WeaponHolder).
+
+@export_group("Movement")
+@export var walk_speed := 4.5
+@export var sprint_multiplier := 1.55
+@export var crouch_multiplier := 0.55
+@export var acceleration := 40.0    ## m/s² on the ground (doubles as friction)
+@export var jump_velocity := 4.6
+
+@export_group("Bunny Hop")
+## Hard horizontal ceiling as a multiple of walk_speed. Only ever bites while
+## airborne — grounded movement is already clamped to walk/sprint.
+@export var bhop_speed_cap_mult := 2.2
+## Per-tick air wish-speed cap (the Source "30 units" analog). Small on
+## purpose: it kills straight-line air gain while strafe+turn stays additive.
+@export var air_speed_cap := 0.7
+@export var air_accelerate := 60.0      ## autohop / held-jump hops: slow build
+@export var air_accelerate_tap := 90.0  ## fresh-tap hops: fast build, same cap
+@export var jump_buffer_time := 0.1     ## seconds a jump press stays usable
+@export var autohop_enabled := true     ## held jump re-hops on landing
+
+@export_group("Look")
+@export var mouse_sensitivity := 0.0022  ## radians per mouse pixel
+@export var pitch_limit_degrees := 89.0
+
+@export_group("Crouch")
+@export var stand_height := 1.8
+@export var crouch_height := 1.2
+@export var crouch_lerp_speed := 10.0
+
+@export_group("Interaction")
+@export var interact_range := 2.5
+
+@export_group("Stats")
+@export var max_health := 100.0
+
+## Eye sits this far below the capsule top.
+const EYE_DROP := 0.15
+## Physics layer 4 ("interactable") as a mask value.
+const INTERACT_MASK := 8
+
+## Noclip fly speed as a multiple of walk_speed (sprint stacks on top).
+const NOCLIP_SPEED_MULT := 3.0
+
+var health := 100.0
+var _pitch := 0.0
+var _crouching := false
+var _noclip := false
+var _dead := false
+var _jump_buffer := 0.0
+var _hop_accel := 0.0  # air accel chosen at liftoff, held for the whole hop
+var _tucked := false   # airborne crouch: capsule anchored at the top
+var _focused: Node3D = null  # interactable under the crosshair
+var _last_prompt := ""
+var _mount = null  # ManualTurret while mounted (duck-typed)
+
+@onready var head: Node3D = $Head
+@onready var camera: Camera3D = $Head/Camera3D
+@onready var collision_shape: CollisionShape3D = $CollisionShape3D
+@onready var capsule: CapsuleShape3D = collision_shape.shape as CapsuleShape3D
+@onready var weapon: Weapon = $Head/Camera3D/WeaponHolder.get_child(0) as Weapon
+
+
+func _ready() -> void:
+	health = max_health
+	_hop_accel = air_accelerate
+	# Fresh run: these autoloads survive scene reloads, so the run owner
+	# resets them here — mirrors EnemyPool.release_all().
+	Inventory.reset()
+	PerkManager.reset_run()
+	CraftingSystem.reset_run()
+	if weapon.data.ammo_type != &"":
+		Inventory.add(weapon.data.ammo_type, weapon.data.reserve_ammo)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	weapon.fired.connect(_on_weapon_fired)
+	# Deferred so the HUD (a sibling) is connected before the first broadcast.
+	call_deferred("_announce_health")
+
+
+## Player side of the mount handshake (v0.5.1). While mounted every player
+## input path is suppressed (look, movement, fire, interact ray) but the
+## body stays in the world and take_damage still applies — rooted and
+## exposed is the price of the mounted gun.
+func enter_mount(turret) -> void:
+	if _mount != null or _dead:
+		return
+	_mount = turret
+	velocity = Vector3.ZERO
+	global_position = turret.mount_point.global_position
+	rotation.y = turret.global_rotation.y
+	turret.on_mounted(self)
+
+
+func exit_mount() -> void:
+	if _mount == null:
+		return
+	var turret = _mount
+	_mount = null
+	_focused = null    # the dismount press must not immediately re-interact
+	_last_prompt = ""  # force a fresh prompt emit on the next focus pass
+	turret.on_dismounted()
+	camera.current = true
+	weapon._announce()  # HUD back to the sidearm
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _mount != null:
+		return  # the turret owns look input while mounted
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		var motion := event as InputEventMouseMotion
+		rotate_y(-motion.relative.x * mouse_sensitivity)
+		_set_pitch(_pitch - motion.relative.y * mouse_sensitivity)
+	elif event.is_action_pressed("ui_cancel"):
+		# Testing convenience: Esc frees the mouse, any click recaptures.
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	elif event is InputEventMouseButton and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _process(_delta: float) -> void:
+	if _mount != null:
+		return  # the turret owns fire/reload/interact while mounted
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	if weapon.data.automatic:
+		if Input.is_action_pressed("fire"):
+			weapon.try_fire()
+	elif Input.is_action_just_pressed("fire"):
+		weapon.try_fire()
+	if Input.is_action_just_pressed("reload"):
+		weapon.start_reload()
+	if Input.is_action_just_pressed("interact") and _focused:
+		_focused.interact(self)
+
+
+func _physics_process(delta: float) -> void:
+	if _mount != null:
+		return  # parked at the mount; no movement, no interact ray
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		# A UI owns the mouse (crafting screen / Esc-freed): hold position.
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+		move_and_slide()
+		return
+	if _noclip:
+		_noclip_move(delta)
+		return
+	_update_crouch(delta)
+	_update_jump_buffer(delta)
+	_update_interact_focus()
+
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var wish := global_transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
+	wish.y = 0.0
+	if wish.length_squared() > 0.0:
+		wish = wish.normalized()
+
+	if is_on_floor():
+		var tap := _jump_buffer > 0.0
+		if tap or (autohop_enabled and Input.is_action_pressed("jump")):
+			_jump_buffer = 0.0
+			velocity.y = jump_velocity
+			# The accel picked at liftoff rides the whole hop. A buffered
+			# fresh tap earns the faster build even if jump is also held,
+			# so rhythmic re-tapping beats holding.
+			_hop_accel = air_accelerate_tap if tap else air_accelerate
+			# Below run speed the hop frame still gets ground acceleration —
+			# otherwise holding jump from a standstill pogos at air-cap speed
+			# forever. At or above run speed it's skipped: that's the
+			# momentum carry that makes bhop work.
+			if Vector2(velocity.x, velocity.z).length() < _current_speed():
+				var hvel := Vector3(velocity.x, 0.0, velocity.z)\
+						.move_toward(wish * _current_speed(), acceleration * delta)
+				velocity.x = hvel.x
+				velocity.z = hvel.z
+			_accelerate(wish, air_speed_cap, _hop_accel, delta)
+		else:
+			_hop_accel = air_accelerate  # ledge walk-offs get the base accel
+			# Grounded move_toward doubles as friction: a missed hop bleeds
+			# speed back toward walk/sprint.
+			var hvel := Vector3(velocity.x, 0.0, velocity.z)\
+					.move_toward(wish * _current_speed(), acceleration * delta)
+			velocity.x = hvel.x
+			velocity.z = hvel.z
+	else:
+		velocity += get_gravity() * delta
+		_accelerate(wish, air_speed_cap, _hop_accel, delta)
+
+	_cap_horizontal_speed()
+	move_and_slide()
+
+
+## Dev-only capability, driven by DebugManager.toggle_noclip() — the player
+## itself never reads debug state for this (CODE_GUIDE debug rules). While
+## on: collisions off, camera-relative free-fly (jump = up, crouch = down,
+## sprint stacks), gravity ignored.
+func set_noclip(on: bool) -> void:
+	_noclip = on
+	collision_shape.disabled = on
+	velocity = Vector3.ZERO
+
+
+func _noclip_move(delta: float) -> void:
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var wish := camera.global_basis * Vector3(input_dir.x, 0.0, input_dir.y)
+	if Input.is_action_pressed("jump"):
+		wish.y += 1.0
+	if Input.is_action_pressed("crouch"):
+		wish.y -= 1.0
+	if wish.length_squared() > 0.0:
+		wish = wish.normalized()
+	var speed := walk_speed * NOCLIP_SPEED_MULT
+	if Input.is_action_pressed("sprint"):
+		speed *= sprint_multiplier
+	global_position += wish * speed * delta
+
+
+## Short camera-center ray against the interactable layer. Tracks what's
+## under the crosshair and keeps the HUD prompt current — prompts are
+## re-read every frame because their text is stateful (costs, ammo counts).
+func _update_interact_focus() -> void:
+	var from := camera.global_position
+	var to := from - camera.global_basis.z * interact_range
+	var query := PhysicsRayQueryParameters3D.create(from, to, INTERACT_MASK, [get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var collider: Object = hit.get("collider") if not hit.is_empty() else null
+	_focused = collider if (collider is Node3D and collider.has_method("interact")) else null
+	var prompt: String = _focused.get_interact_prompt() if _focused else ""
+	if prompt != _last_prompt:
+		_last_prompt = prompt
+		EventBus.interact_prompt_changed.emit(prompt)
+
+
+func _update_jump_buffer(delta: float) -> void:
+	if Input.is_action_just_pressed("jump"):
+		_jump_buffer = jump_buffer_time
+	else:
+		_jump_buffer = maxf(_jump_buffer - delta, 0.0)
+
+
+## Quake-style air accelerate: only the velocity component along wishdir is
+## capped (at wishspeed), so strafing while turning into the strafe keeps
+## adding speed, while pushing straight ahead adds nothing.
+func _accelerate(wishdir: Vector3, wishspeed: float, accel: float, delta: float) -> void:
+	var current := Vector2(velocity.x, velocity.z).dot(Vector2(wishdir.x, wishdir.z))
+	var add := wishspeed - current
+	if add <= 0.0:
+		return
+	var amount := minf(accel * wishspeed * delta, add)
+	velocity.x += wishdir.x * amount
+	velocity.z += wishdir.z * amount
+
+
+func _cap_horizontal_speed() -> void:
+	var flat := Vector2(velocity.x, velocity.z)
+	var cap := walk_speed * bhop_speed_cap_mult
+	if flat.length() > cap:
+		flat = flat.normalized() * cap
+		velocity.x = flat.x
+		velocity.z = flat.y
+
+
+func _current_speed() -> float:
+	var perk_mult := PerkManager.get_multiplier(&"move_speed")
+	if _crouching:
+		return walk_speed * crouch_multiplier * perk_mult
+	if Input.is_action_pressed("sprint") and is_on_floor():
+		return walk_speed * sprint_multiplier * perk_mult
+	return walk_speed * perk_mult
+
+
+func _update_crouch(delta: float) -> void:
+	var want := Input.is_action_pressed("crouch")
+	if not want and _crouching and not _has_headroom():
+		want = true  # something overhead — stay down until it's clear
+	_crouching = want
+	var target := crouch_height if _crouching else stand_height
+	capsule.height = lerpf(capsule.height, target, minf(crouch_lerp_speed * delta, 1.0))
+
+	# Airborne duck anchors the capsule TOP so the feet tuck up by
+	# (stand - crouch) ≈ 0.6 m — the reach that lets a crouch-jump mount a
+	# ledge a plain jump can't. Grounded crouch stays feet-anchored.
+	var tucked := _crouching and not is_on_floor()
+	if _tucked and not tucked and is_on_floor():
+		# Landing while tucked: lift the origin so the capsule bottom (the
+		# feet) stays put through the re-anchor. Keeps ledge landings from
+		# ejecting the body and keeps the eye continuous.
+		global_position.y += stand_height - capsule.height
+	_tucked = tucked
+
+	# The shape moves instantly (physics must be exact); the eye lerps so
+	# transitions never snap the camera.
+	if tucked:
+		collision_shape.position.y = stand_height - capsule.height * 0.5
+	else:
+		collision_shape.position.y = capsule.height * 0.5
+	var eye_target := (stand_height - EYE_DROP) if tucked else (capsule.height - EYE_DROP)
+	head.position.y = lerpf(head.position.y, eye_target, minf(crouch_lerp_speed * delta, 1.0))
+
+
+func _has_headroom() -> bool:
+	var from := global_position + Vector3.UP * (capsule.height - 0.1)
+	var to := global_position + Vector3.UP * (stand_height + 0.1)
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+func _set_pitch(value: float) -> void:
+	_pitch = clampf(value,
+			-deg_to_rad(pitch_limit_degrees), deg_to_rad(pitch_limit_degrees))
+	head.rotation.x = _pitch
+
+
+func take_damage(amount: float) -> void:
+	if _dead:
+		return
+	if DebugManager.infinite_health:  # the one debug check (CODE_GUIDE rules)
+		return
+	health = maxf(health - amount, 0.0)
+	EventBus.player_health_changed.emit(health, max_health)
+	if health <= 0.0:
+		_die()
+
+
+func _die() -> void:
+	_dead = true
+	# Dying mounted must hand the camera back before the overlay freezes
+	# everything, or game-over renders through the turret's eyes.
+	if _mount != null:
+		exit_mount()
+	# The game-over overlay listens for this and freezes the tree.
+	EventBus.player_died.emit()
+
+
+func _on_weapon_fired() -> void:
+	# Camera recoil stays applied (the player re-aims); viewmodel kick is the
+	# weapon's own job.
+	_set_pitch(_pitch + deg_to_rad(weapon.data.recoil_pitch))
+	rotate_y(deg_to_rad(randf_range(-weapon.data.recoil_yaw, weapon.data.recoil_yaw)))
+
+
+func _announce_health() -> void:
+	EventBus.player_health_changed.emit(health, max_health)

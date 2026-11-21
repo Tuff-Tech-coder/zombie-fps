@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Perk" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://autoload/perk.gd" id="1_pk"]
+[ext_resource type="Script" path="res://autoload/electric_cherry_effect.gd" id="2_fx"]
+
+[resource]
+script = ExtResource("1_pk")
+id = &"electric_cherry"
+display_name = "Electric Cherry"
+color = Color(1, 0.25, 0.35, 1)
+delivery = 0
+trigger = 1
+tier = 1
+effect_script = ExtResource("2_fx")
+params = {
+"max_shock_damage": 90.0,
+"min_shock_damage": 20.0,
+"radius": 3.5,
+"stun": 1.5
+}

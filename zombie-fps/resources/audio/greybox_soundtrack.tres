@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MapMusic" format=3 uid="uid://b8acq57cs4g4u"]
+
+[ext_resource type="Script" uid="uid://cus3nptwl8gb6" path="res://audio/map_music.gd" id="1_mm"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_prep_loop.res" id="2_prep"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/greybox_combat_loop.res" id="3_cmb"]
+[ext_resource type="AudioStream" path="res://resources/audio/generated/death_stinger.res" id="4_dth"]
+
+[resource]
+script = ExtResource("1_mm")
+prep_tracks = Array[AudioStream]([ExtResource("2_prep")])
+round_tracks = Array[AudioStream]([ExtResource("3_cmb")])
+boss_track = ExtResource("3_cmb")
+death_stinger = ExtResource("4_dth")

@@ -1,0 +1,130 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/crafting_ui.gd" id="1_cu"]
+
+[sub_resource type="StyleBoxFlat" id="panel_box"]
+bg_color = Color(0.07, 0.08, 0.09, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.85, 1, 0.4)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="CraftingUI" type="CanvasLayer"]
+layer = 4
+script = ExtResource("1_cu")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="Root"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -370.0
+offset_top = -240.0
+offset_right = 370.0
+offset_bottom = 240.0
+theme_override_styles/panel = SubResource("panel_box")
+
+[node name="Margin" type="MarginContainer" parent="Root/Panel"]
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel/Margin"]
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/Panel/Margin/VBox"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+text = "CRAFTING — BENCH"
+horizontal_alignment = 1
+
+[node name="Columns" type="HBoxContainer" parent="Root/Panel/Margin/VBox"]
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="CompoundsCol" type="VBoxContainer" parent="Root/Panel/Margin/VBox/Columns"]
+size_flags_horizontal = 3
+
+[node name="CompoundsHead" type="Label" parent="Root/Panel/Margin/VBox/Columns/CompoundsCol"]
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 14
+text = "COMPOUNDS"
+
+[node name="CompoundScroll" type="ScrollContainer" parent="Root/Panel/Margin/VBox/Columns/CompoundsCol"]
+size_flags_vertical = 3
+
+[node name="CompoundList" type="VBoxContainer" parent="Root/Panel/Margin/VBox/Columns/CompoundsCol/CompoundScroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="MixCol" type="VBoxContainer" parent="Root/Panel/Margin/VBox/Columns"]
+size_flags_horizontal = 3
+
+[node name="MixHead" type="Label" parent="Root/Panel/Margin/VBox/Columns/MixCol"]
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 14
+text = "MIX"
+
+[node name="MixScroll" type="ScrollContainer" parent="Root/Panel/Margin/VBox/Columns/MixCol"]
+size_flags_vertical = 3
+
+[node name="MixList" type="VBoxContainer" parent="Root/Panel/Margin/VBox/Columns/MixCol/MixScroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="DosesCol" type="VBoxContainer" parent="Root/Panel/Margin/VBox/Columns"]
+size_flags_horizontal = 3
+
+[node name="DosesHead" type="Label" parent="Root/Panel/Margin/VBox/Columns/DosesCol"]
+theme_override_colors/font_color = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 14
+text = "DOSES"
+
+[node name="DoseScroll" type="ScrollContainer" parent="Root/Panel/Margin/VBox/Columns/DosesCol"]
+size_flags_vertical = 3
+
+[node name="DoseList" type="VBoxContainer" parent="Root/Panel/Margin/VBox/Columns/DosesCol/DoseScroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Root/Panel/Margin/VBox"]
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="CombineButton" type="Button" parent="Root/Panel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
+text = "  COMBINE  "
+
+[node name="ClearButton" type="Button" parent="Root/Panel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
+text = "  CLEAR MIX  "
+
+[node name="CloseButton" type="Button" parent="Root/Panel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
+text = "  CLOSE  "
+
+[node name="Result" type="Label" parent="Root/Panel/Margin/VBox"]
+unique_name_in_owner = true
+theme_override_colors/font_color = Color(1, 0.85, 0.5, 1)
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+
+[node name="Hints" type="Label" parent="Root/Panel/Margin/VBox"]
+unique_name_in_owner = true
+theme_override_colors/font_color = Color(0.6, 0.8, 0.65, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "No formulas known"
+horizontal_alignment = 1
+autowrap_mode = 2

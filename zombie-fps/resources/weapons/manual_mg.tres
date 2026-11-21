@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wd"]
+
+[resource]
+script = ExtResource("1_wd")
+display_name = "Mounted MG"
+automatic = true
+damage = 20.0
+fire_rate = 12.0
+mag_size = 1
+reserve_ammo = 0
+reload_time = 0.0
+spread_degrees = 1.5
+range_meters = 60.0
+recoil_pitch = 0.0
+recoil_yaw = 0.0
+ammo_type = &"762"
