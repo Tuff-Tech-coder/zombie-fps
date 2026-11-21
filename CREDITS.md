@@ -23,3 +23,9 @@ logged here (CC-BY requires credit; CC0 is logged for provenance).
 - **Audio**: all music and SFX are synthesized in-engine
   (`weapons/placeholder_sfx.gd`, `audio/_sfx_bake.gd` → `resources/audio/generated/*.res`).
   No third-party audio is included.
+
+## Project license
+
+The project's own code, scenes and generated assets are MIT-licensed (see
+`LICENSE` at the repo root). Third-party items in the table above keep their
+own licenses (KayKit: CC0; Godot AI addon: MIT).
