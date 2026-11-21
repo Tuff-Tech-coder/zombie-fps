@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 semantic (pre-1.0: minor = milestone, patch = fixes within it). See DESIGN_DOC §12
 for the milestone roadmap.
 
+## [Unreleased] — Repo conventions + CC0-only assets
+
+### Changed
+
+- **Assets are CC0/MIT/generated only.** Mixamo rigs and clips replaced by the
+  KayKit skeleton (walker; boss is the same model at 1.4x); the ripped mp3
+  soundtrack replaced by the synthesized loops in `resources/audio/generated/`
+  (re-baked the corrupt `city_prep_loop.res`). Boss weak-point head tracking is
+  inert on the skeleton (no `Head` bone under `GeneralSkeleton`); boss attack
+  timing is untuned for the skeleton's clips.
+- Docs moved into `docs/`; `CLAUDE.md`, `docs/git-workflow.md` added.
+
+### Added
+
+- Headless smoke suite `zombie-fps/tests/test_runner.tscn` (29 checks).
+
 ## [0.8.3.5] — Skip-prep key, boss no-show fix, dev noclip
 
 ### Added
