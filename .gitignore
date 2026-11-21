@@ -1,2 +1,20 @@
+# Private working folders (never commit)
 _private/
 _to_delete/
+
+# Godot
+.godot/
+.import/
+*.tmp
+
+# Exports (built locally, released as archives)
+/builds/
+/export/
+/zombie-fps/builds/
+/zombie-fps/export/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
