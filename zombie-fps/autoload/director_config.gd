@@ -5,7 +5,7 @@ extends Resource
 ##
 ## EVERY VALUE HERE IS A PLACEHOLDER. These defaults are guesses, not tuned
 ## numbers — the real distances, curve, and rates are derived per
-## PROFILING_PLAYBOOK.md against the final rigs. Re-tuning is editing the
+## docs/PROFILING_PLAYBOOK.md against the final rigs. Re-tuning is editing the
 ## .tres, never touching code.
 
 @export_group("Placement (metres, placeholder)")

@@ -4,7 +4,7 @@ extends Node
 ## with a serif system font). Run the sibling _texture_bake.tscn once from
 ## the editor to (re)bake res://world/city/textures/*.png — the game never
 ## loads this script. Kept in-repo so the art pass is reproducible and the
-## textures' provenance is documented (see CREDITS.md).
+## textures' provenance is documented (see CREDITS.md at the repo root).
 
 const OUT := "res://world/city/textures/"
 const S := 512

@@ -4,7 +4,7 @@ extends Resource
 ##
 ## EVERY VALUE HERE IS A PLACEHOLDER. These defaults are guesses, not tuned
 ## numbers — the real distance bands, update rates, and hysteresis are derived
-## by Opus post-model-swap per PROFILING_PLAYBOOK.md, against the final rigs.
+## by Opus post-model-swap per docs/PROFILING_PLAYBOOK.md, against the final rigs.
 ## Re-tuning is editing this .tres, never touching code.
 
 ## How many enemies the manager re-evaluates per physics tick (round-robin,
